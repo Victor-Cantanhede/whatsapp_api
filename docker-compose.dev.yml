@@ -1,0 +1,32 @@
+services:
+    postgres:
+        image: postgres:16
+
+        container_name: whatsapp-api-db
+
+        restart: always
+
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: whatsapp_api
+
+        ports:
+            - '5434:5432'
+
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+    rabbitmq:
+        image: rabbitmq:3-management
+        container_name: whatsapp-api-rabbitmq
+        restart: always
+        environment:
+            RABBITMQ_DEFAULT_USER: guest
+            RABBITMQ_DEFAULT_PASS: guest
+        ports:
+            - '5672:5672'
+            - '15672:15672'
+
+volumes:
+    postgres_data:
