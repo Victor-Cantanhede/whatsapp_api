@@ -1,12 +1,29 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import { join } from 'path';
 import { ConnectionUseCase } from '../application/connection.use-case';
 import { ConnectionCreateDto } from '../dtos/ConnectionCreateDto';
+import { ConnectionOauthCallbackDto } from '../dtos/ConnectionOauthCallbackDto';
 import { ConnectionResponseDto } from '../dtos/ConnectionResponseDto';
 import { ResponseModel } from 'src/shared/models/ResponseModel';
 
 @Controller('connection')
 export class ConnectionController {
-	constructor(private readonly connectionUseCase: ConnectionUseCase) {}
+	constructor(private readonly connectionUseCase: ConnectionUseCase) { }
+
+	@Get('facebook-config')
+	getFacebookConfig() {
+		return {
+			appId: process.env.META_APP_ID,
+			configId: process.env.META_CONFIGURATION_ID,
+			version: process.env.CLOUD_API_VERSION || 'v25.0',
+		};
+	}
+
+	@Post('oauth-callback')
+	async oauthCallback(@Body() dto: ConnectionOauthCallbackDto): Promise<ResponseModel<ConnectionResponseDto>> {
+		return this.connectionUseCase.processOauthCallback(dto);
+	}
 
 	@Post('create')
 	async create(@Body() dto: ConnectionCreateDto): Promise<ResponseModel<ConnectionResponseDto>> {

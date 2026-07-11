@@ -4,6 +4,7 @@ import { ConnectionModule } from './modules/connection/connection.module';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { MessageModule } from './modules/message/message.module';
 import { WhatsAppApiModule } from './infrastructure/whatsapp-api/whatsapp-api.module';
+import { AppController } from './app.controller';
 
 @Module({
 	imports: [
@@ -13,5 +14,6 @@ import { WhatsAppApiModule } from './infrastructure/whatsapp-api/whatsapp-api.mo
 		MessageModule,
 		WhatsAppApiModule,
 	],
+	controllers: [AppController],
 })
 export class AppModule {}

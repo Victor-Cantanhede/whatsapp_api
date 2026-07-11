@@ -3,9 +3,16 @@ import { ConnectionService } from '../services/connection.service';
 import { ConnectionCreateDto } from '../dtos/ConnectionCreateDto';
 import { ResponseModel } from 'src/shared/models/ResponseModel';
 import { ConnectionResponseDto } from '../dtos/ConnectionResponseDto';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { ConnectionOauthCallbackDto } from '../dtos/ConnectionOauthCallbackDto';
+
 @Injectable()
 export class ConnectionUseCase {
-	constructor(private readonly connectionService: ConnectionService) { }
+	constructor(
+		private readonly connectionService: ConnectionService,
+		private readonly httpService: HttpService
+	) { }
 
 	private async getConnectionQuery(fn: () => Promise<ConnectionResponseDto | null>): Promise<ResponseModel<ConnectionResponseDto>> {
 		const response = new ResponseModel<ConnectionResponseDto>();
@@ -28,6 +35,48 @@ export class ConnectionUseCase {
 		}
 
 		return response;
+	}
+
+	async processOauthCallback(dto: ConnectionOauthCallbackDto): Promise<ResponseModel<ConnectionResponseDto>> {
+		const response = new ResponseModel<ConnectionResponseDto>();
+
+		const version = process.env.CLOUD_API_VERSION || 'v25.0';
+		const appId = process.env.META_APP_ID;
+		const appSecret = process.env.TOKEN_APP_META;
+
+		try {
+			const tokenUrl = `https://graph.facebook.com/${version}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${dto.code}`;
+
+			const tokenRes = await firstValueFrom(this.httpService.post(tokenUrl));
+			const userToken = tokenRes.data.access_token;
+
+			const phoneUrl = `https://graph.facebook.com/${version}/${dto.waba_id}/phone_numbers?fields=id&access_token=${userToken}`;
+			const phoneRes = await firstValueFrom(this.httpService.get(phoneUrl));
+			const phoneId = phoneRes.data.data[0].id;
+
+			const webhookUrl = `https://graph.facebook.com/${version}/${dto.waba_id}/subscribed_apps`;
+			await firstValueFrom(
+				this.httpService.post(webhookUrl, {}, {
+					headers: { Authorization: `Bearer ${userToken}` }
+				})
+			);
+
+			const createDto: ConnectionCreateDto = {
+				connection_name: dto.connection_name || 'Nova Conexão Embedded',
+				user_token: userToken,
+				waba_id: dto.waba_id,
+				phone_id: phoneId
+			} as ConnectionCreateDto;
+
+			return await this.create(createDto);
+		} catch (error: any) {
+			console.log('Error processing oauth callback:', error?.response?.data || error);
+
+			response.success = false;
+			response.message = 'Falha ao processar o login com o Facebook.';
+
+			return response;
+		}
 	}
 
 	async create(dto: ConnectionCreateDto): Promise<ResponseModel<ConnectionResponseDto>> {

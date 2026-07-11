@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Integração WhatsApp Business API</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #25D366;
+            --primary-hover: #1EBE5D;
+            --facebook-blue: #1877F2;
+            --facebook-hover: #166FE5;
+            --text-dark: #1C1E21;
+            --text-muted: #65676B;
+            --bg-color: #F0F2F5;
+            --card-bg: #FFFFFF;
+            --border-color: #E4E6EB;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 480px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            width: 56px;
+            height: 56px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .description {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .btn-facebook {
+            background-color: var(--facebook-blue);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-facebook:hover {
+            background-color: var(--facebook-hover);
+        }
+
+        .btn-facebook svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: .25em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: .25em;
+        }
+
+        .footer-note {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .footer-note a {
+            color: var(--facebook-blue);
+            text-decoration: none;
+        }
+
+        .footer-note a:hover {
+            text-decoration: underline;
+        }
+
+        /* Result Area */
+        #result-area {
+            display: none;
+            margin-top: 32px;
+            text-align: left;
+            background-color: #F7F8FA;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        #result-area h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #result-area h3 svg {
+            color: var(--primary);
+            width: 20px;
+            height: 20px;
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .result-value {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #E4E6EB;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            word-break: break-all;
+            color: var(--text-dark);
+            border: 1px solid #D0D2D6;
+        }
+
+        .loading-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(24, 119, 242, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--facebook-blue);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 500;
+        }
+    </style>
+
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+
+    <script>
+        let metaConfig = null;
+        let facebookAuthCode = null;
+
+        // Fetch configs do backend logo ao iniciar
+        async function loadFacebookConfig() {
+            // Garante que o usuário veja que algo está carregando
+            document.getElementById('action-area').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'flex';
+            document.getElementById('loading-text').innerText = 'Carregando configurações seguras...';
+
+            try {
+                const response = await fetch('/connection/facebook-config');
+                metaConfig = await response.json();
+                
+                // Exibe o botão pois já temos a configuração para usá-lo
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('action-area').style.display = 'block';
+                
+                // Se a SDK já carregou, tenta inicializar agora
+                if (window.FB && typeof window.FB.init === 'function') {
+                     initFacebookSDK();
+                }
+            } catch (err) {
+                console.error('Erro ao carregar configs do Meta:', err);
+                document.getElementById('loading-text').innerText = 'Erro ao carregar configurações da API.';
+            }
+        }
+
+        function initFacebookSDK() {
+            if (metaConfig && window.FB) {
+                FB.init({
+                    appId: metaConfig.appId,
+                    autoLogAppEvents: true,
+                    xfbml: true,
+                    version: metaConfig.version,
+                });
+            }
+        }
+
+        // Inicialização assíncrona do SDK do Facebook (chamado pela própria SDK do fb)
+        window.fbAsyncInit = function () {
+             initFacebookSDK();
+        };
+
+        // Inicia a busca de configuração ao carregar a página
+        window.addEventListener('DOMContentLoaded', loadFacebookConfig);
+
+        // Ouvinte de eventos (Listener) para capturar o retorno do fluxo incorporado do WhatsApp
+        window.addEventListener('message', (event) => {
+            if (!event.origin.endsWith('facebook.com')) return;
+
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'WA_EMBEDDED_SIGNUP') {
+                    console.log('Evento do fluxo capturado:', data);
+                    const waba_id = data.data.waba_id;
+                    const business_id = data.data.business_id;
+
+                    console.log('DADOS DA INTEGRAÇÃO EXTRAÍDOS:', data.data);
+
+                    // Dispara o fluxo de comunicação com o backend
+                    processBackendIntegration(waba_id);
+                }
+            } catch (err) {
+                console.error('ERRO AO PROCESSAR MENSAGEM DO FLUXO:', err);
+            }
+        });
+
+        // Aguarda a resposta do login (o code) para enviar ao backend
+        async function processBackendIntegration(waba_id) {
+            document.getElementById('action-area').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'flex';
+            document.getElementById('loading-text').innerText = 'Finalizando configuração no servidor...';
+
+            // Aguarda o código de autorização
+            while (!facebookAuthCode) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            try {
+                const response = await fetch('/connection/oauth-callback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: facebookAuthCode,
+                        waba_id: waba_id,
+                        connection_name: 'Nova Conexão API'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    renderIntegrationDetails(result.data);
+                } else {
+                    throw new Error(result.message || 'Erro ao processar callback');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Ocorreu um erro ao vincular a conta: ' + error.message);
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('action-area').style.display = 'block';
+            }
+        }
+
+        function renderIntegrationDetails(integration) {
+            const resultArea = document.getElementById('result-area');
+            const resultList = document.getElementById('result-list');
+            const loadingState = document.getElementById('loading-state');
+            const actionArea = document.getElementById('action-area');
+
+            loadingState.style.display = 'none';
+            actionArea.style.display = 'none';
+            resultArea.style.display = 'block';
+
+            const items = [
+                { label: 'Status do Token', value: 'Armazenado com Segurança' },
+                { label: 'Phone ID (Telefone)', value: integration.phone_id },
+                { label: 'WABA ID (WhatsApp Business)', value: integration.waba_id },
+            ];
+
+            resultList.innerHTML = '';
+            items.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <div class="result-label">${item.label}</div>
+                    <div class="result-value">${item.value}</div>
+                `;
+                resultList.appendChild(div);
+            });
+        }
+
+        // Função de callback acionada pelo encerramento da janela modal de Login do Facebook
+        const fbLoginCallback = (response) => {
+            if (response.authResponse) {
+                facebookAuthCode = response.authResponse.code;
+                console.log('Código de autenticação retornado:', facebookAuthCode);
+            } else {
+                console.warn('Fluxo cancelado ou falha na autenticação:', response);
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('action-area').style.display = 'block';
+            }
+        };
+
+        // Disparador inicial do fluxo integrado que abre o Embedded Signup do WhatsApp
+        window.launchWhatsAppSignup = () => {
+            if (!metaConfig) {
+                alert('As configurações ainda não foram carregadas.');
+                return;
+            }
+
+            document.getElementById('action-area').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'flex';
+            document.getElementById('loading-text').innerText = 'Abrindo janela de login...';
+
+            FB.login(fbLoginCallback, {
+                config_id: metaConfig.configId,
+                response_type: 'code',
+                override_default_response_type: true,
+                extras: {
+                    version: 'v3',
+                    setup: {
+                        business: {
+                            id: null,
+                            name: null,
+                            email: null,
+                            phone: { code: null, number: null },
+                            website: null,
+                            address: { streetAddress1: null, streetAddress2: null, city: null, state: null, zipPostal: null, country: null },
+                            timezone: null,
+                        },
+                        phone: {
+                            displayName: null,
+                            category: null,
+                            description: null,
+                        },
+                        preVerifiedPhone: { ids: null },
+                        solutionID: null,
+                        whatsAppBusinessAccount: { ids: null },
+                    },
+                    featureType: 'whatsapp_business_app_onboarding',
+                },
+            });
+        };
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <!-- WhatsApp Icon -->
+                <svg class="logo" style="fill: var(--primary);" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+                </svg>
+            </div>
+            <h1 class="title">Conectar ao WhatsApp</h1>
+            <p class="description">Vincule seu número do WhatsApp Business para habilitar os envios automatizados
+                através da nossa plataforma.</p>
+        </div>
+
+        <div id="action-area" style="display: none;">
+            <button class="btn-facebook" onclick="window.launchWhatsAppSignup()">
+                <!-- Facebook Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path
+                        d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+                Continuar com Facebook
+            </button>
+            <div class="divider">Rápido e Seguro</div>
+            <p class="description" style="font-size: 13px;">O login com o Facebook é necessário para configurar a API
+                Oficial do WhatsApp Business.</p>
+        </div>
+
+        <div id="loading-state" class="loading-state">
+            <div class="spinner"></div>
+            <div id="loading-text" class="loading-text">Autenticando...</div>
+        </div>
+
+        <div id="result-area">
+            <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Conexão Estabelecida
+            </h3>
+            <p class="description" style="margin-bottom: 20px; font-size: 13px;">Sua conta foi vinculada com sucesso.
+                Detalhes da integração:</p>
+            <div id="result-list">
+                <!-- Items will be injected here via JS -->
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Protegido pelo <a href="https://www.facebook.com/business/tools/whatsapp-business-api" target="_blank"
+                rel="noopener noreferrer">Facebook Developer Platform</a>.
+        </div>
+    </div>
+</body>
+
+</html>
