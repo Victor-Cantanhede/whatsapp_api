@@ -4,6 +4,7 @@ import { EventMessageTextReceivedDto } from '../webhooks/dtos/EventMessageTextRe
 import { EventMessageTextEchoDto } from '../webhooks/dtos/EventMessageTextEchoDto';
 import { ConnectionService } from '../../connection/services/connection.service';
 import * as crypto from 'crypto';
+import { WebhookPayloadMessageTextDto } from '../webhooks/dtos/WebhookPayloadMessageTextDto';
 
 @Controller()
 export class MessageConsumer {
@@ -64,7 +65,8 @@ export class MessageConsumer {
                         const contact = contacts.find((c: any) => c.wa_id === waId);
                         const contactName = contact?.profile?.name;
 
-                        const webhookPayload = {
+                        const webhookPayload: WebhookPayloadMessageTextDto = {
+                            connectionId: connection.id,
                             phoneNumberId: phoneNumberId,
                             waId: waId,
                             contactName: contactName,
@@ -88,7 +90,7 @@ export class MessageConsumer {
         }
     }
 
-    private async dispatchWebhook(payload: any): Promise<void> {
+    private async dispatchWebhook(payload: WebhookPayloadMessageTextDto): Promise<void> {
         const url = process.env.CLIENT_WEBHOOK_URL;
         const secret = process.env.CLIENT_WEBHOOK_SECRET;
 
