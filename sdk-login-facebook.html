@@ -368,6 +368,8 @@
                 `;
                 resultList.appendChild(div);
             });
+
+            window.parent.postMessage({ type: 'WHATSAPP_CONNECTED_SUCCESS' }, '*');
         }
 
         // Função de callback acionada pelo encerramento da janela modal de Login do Facebook
