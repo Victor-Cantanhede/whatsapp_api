@@ -1,10 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
-import { EventMessageTextReceivedDto } from '../webhooks/dtos/EventMessageTextReceivedDto';
-import { EventMessageTextEchoDto } from '../webhooks/dtos/EventMessageTextEchoDto';
 import { ConnectionService } from '../../connection/services/connection.service';
 import * as crypto from 'crypto';
-import { WebhookPayloadMessageTextDto } from '../webhooks/dtos/WebhookPayloadMessageTextDto';
+import { EventMessageReceivedDto } from '../webhooks/dtos/EventMessageReceivedDto';
+import { EventMessageEchoDto } from '../webhooks/dtos/EventMessageEchoDto';
+import { WebhookPayloadMessageDto } from '../webhooks/dtos/WebhookPayloadMessageDto';
 
 @Controller()
 export class MessageConsumer {
@@ -12,7 +12,7 @@ export class MessageConsumer {
 
     @EventPattern('meta_webhook_event')
     async handleMetaWebhookEvent(
-        @Payload() data: EventMessageTextReceivedDto | EventMessageTextEchoDto,
+        @Payload() data: EventMessageReceivedDto | EventMessageEchoDto,
         @Ctx() context: RmqContext
     ) {
         const channel = context.getChannelRef();
@@ -52,8 +52,8 @@ export class MessageConsumer {
                     const contacts = change.value.contacts || [];
 
                     for (const message of messages) {
-                        // Trata apenas texto no MVP atual
-                        if (message.type !== 'text') {
+                        const supportedTypes = ['text', 'audio', 'video', 'image', 'document'];
+                        if (!supportedTypes.includes(message.type)) {
                             console.log(`[MessageConsumer] Tipo de mensagem não suportado (${message.type}). Ignorando.`);
                             continue;
                         }
@@ -65,7 +65,7 @@ export class MessageConsumer {
                         const contact = contacts.find((c: any) => c.wa_id === waId);
                         const contactName = contact?.profile?.name;
 
-                        const webhookPayload: WebhookPayloadMessageTextDto = {
+                        const webhookPayload: WebhookPayloadMessageDto = {
                             connectionId: connection.id,
                             phoneNumberId: phoneNumberId,
                             waId: waId,
@@ -73,9 +73,14 @@ export class MessageConsumer {
                             providerMessageId: message.id,
                             timestamp: message.timestamp,
                             type: message.type,
-                            text: message.text.body,
                             fromMe: isEcho,
                         };
+
+                        if (message.text?.body) webhookPayload.text = message.text.body;
+                        if (message.audio) webhookPayload.audio = message.audio;
+                        if (message.video) webhookPayload.video = message.video;
+                        if (message.image) webhookPayload.image = message.image;
+                        if (message.document) webhookPayload.document = message.document;
 
                         await this.dispatchWebhook(webhookPayload);
                     }
@@ -90,7 +95,7 @@ export class MessageConsumer {
         }
     }
 
-    private async dispatchWebhook(payload: WebhookPayloadMessageTextDto): Promise<void> {
+    private async dispatchWebhook(payload: WebhookPayloadMessageDto): Promise<void> {
         const url = process.env.CLIENT_WEBHOOK_URL;
         const secret = process.env.CLIENT_WEBHOOK_SECRET;
 

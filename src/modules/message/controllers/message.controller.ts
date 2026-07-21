@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { MessageSendDto, MessageSendMediaDto } from '../dtos/MessageSendDto';
@@ -35,5 +36,14 @@ export class MessageController {
 		@Body() dto: MessageSendMediaDto,
 	) {
 		return this.messageUseCase.sendMediaMessage(file, dto);
+	}
+
+	@Get('media/:connectionId/:mediaId')
+	async downloadMedia(
+		@Param('connectionId') connectionId: string,
+		@Param('mediaId') mediaId: string,
+		@Res() res: Response
+	) {
+		return this.messageUseCase.downloadMedia(connectionId, mediaId, res);
 	}
 }

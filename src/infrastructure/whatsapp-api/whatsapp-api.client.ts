@@ -33,9 +33,9 @@ export class WhatsAppApiClient {
 	 */
 	async post<T>(phoneId: string, userToken: string, endpoint: string, data: any, customHeaders?: Record<string, string>): Promise<T> {
 		const url = `/${phoneId}${endpoint}`;
-		
+
 		try {
-			const headers: Record<string, string> = { 
+			const headers: Record<string, string> = {
 				Authorization: `Bearer ${userToken}`,
 				...customHeaders,
 			};
@@ -52,6 +52,29 @@ export class WhatsAppApiClient {
 			return response.data;
 		} catch (error: any) {
 			this.handleError(url, 'POST', error);
+		}
+	}
+
+	/**
+	 * Helper to perform HTTP GET requests to WhatsApp Cloud API.
+	 * @param endpoint The specific endpoint (e.g. '/<MEDIA_ID>')
+	 * @param userToken The User Access Token (from the database)
+	 */
+	async get<T>(endpoint: string, userToken: string, customHeaders?: Record<string, string>): Promise<T> {
+		try {
+			const headers: Record<string, string> = {
+				Authorization: `Bearer ${userToken}`,
+				...customHeaders,
+			};
+
+			const response = await lastValueFrom(
+				this.httpService.get<T>(`${this.baseUrl}${endpoint}`, {
+					headers,
+				}),
+			);
+			return response.data;
+		} catch (error: any) {
+			this.handleError(endpoint, 'GET', error);
 		}
 	}
 }

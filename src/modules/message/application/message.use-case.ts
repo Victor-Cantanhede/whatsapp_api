@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { Injectable } from '@nestjs/common';
 import { MessageService } from '../services/message.service';
 import { MessageSendDto, MessageSendMediaDto } from '../dtos/MessageSendDto';
@@ -47,5 +48,18 @@ export class MessageUseCase {
 		}
 
 		return response;
+	}
+
+	async downloadMedia(connectionId: string, mediaId: string, res: Response): Promise<void> {
+		try {
+			await this.messageService.downloadMedia(Number(connectionId), mediaId, res);
+		} catch (error) {
+			const err = error as any;
+			console.log(error);
+
+			const status = err.status || 500;
+
+			res.status(status).json({ success: false, message: err.message || 'Ocorreu um erro ao baixar a mídia!' });
+		}
 	}
 }

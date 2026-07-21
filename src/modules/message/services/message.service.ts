@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DbService } from 'src/infrastructure/database/prisma/prisma.service';
 import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType } from '../dtos/MessageSendDto';
@@ -156,5 +157,44 @@ export class MessageService {
 		};
 
 		return this.apiClient.post<MessageSendMediaResponseDto>(phoneId, userToken, '/messages', payload);
+	}
+
+	async downloadMedia(connectionId: number, mediaId: string, res: Response): Promise<void> {
+		const connection = await this.db.connections.findUnique({
+			where: { id: connectionId },
+		});
+
+		if (!connection) {
+			throw new NotFoundException(`Connection with ID ${connectionId} not found`);
+		}
+
+		// Buscar metadados da media pra obter a URL
+		const mediaMetadata = await this.apiClient.get<{ url: string, mime_type: string }>(
+			`/${mediaId}`,
+			connection.user_token
+		).catch(err => {
+			console.error('Error fetching media metadata:', err);
+			throw new BadGatewayException('Ocorreu um erro ao buscar metadados da mídia!');
+		});
+
+		if (!mediaMetadata || !mediaMetadata.url) {
+			throw new NotFoundException(`URL da mídia não encontrada na Meta.`);
+		}
+
+		// Baixar o arquivo binário
+		const response = await fetch(mediaMetadata.url, {
+			headers: { Authorization: `Bearer ${connection.user_token}` }
+		});
+
+		if (!response.ok) {
+			throw new BadGatewayException(`Erro ao baixar a mídia: ${response.statusText}`);
+		}
+
+		res.setHeader('Content-Type', mediaMetadata.mime_type);
+
+		const arrayBuffer = await response.arrayBuffer();
+		const buffer = Buffer.from(arrayBuffer);
+
+		res.send(buffer);
 	}
 }
