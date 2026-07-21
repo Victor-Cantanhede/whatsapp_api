@@ -69,20 +69,62 @@ export class MessageService {
 		let fileMimeType = file.mimetype;
 		let fileName = file.originalname;
 
-		// Caso o arquivo seja um audio com formato diferente de "ogg", chama o serviço de conversão de audio para o formato ogg (requerido pela meta)
-		// if (uploadedFileType === 'audio' && fileMimeType !== 'audio/ogg') {
-		// 	const convertedAudio = await convertAudioToOgg({
-		// 		buffer: fileBuffer,
-		// 		mimetype: fileMimeType,
-		// 		filename: fileName,
-		// 	}).catch(() => {
-		// 		throw new BadGatewayException('Ocorreu um erro interno na tratativa do formato de audio, entre em contato com o suporte!');
-		// 	});
+		// Caso o arquivo seja um audio, chama o serviço de conversão de audio para o formato ogg (requerido pela meta)
+		if (uploadedFileType === 'audio') {
+			try {
+				const convertFormData = new FormData();
+				const audioBlob = new Blob([fileBuffer as any], { type: fileMimeType });
+				convertFormData.append('audio', audioBlob, fileName);
 
-		// 	fileBuffer = convertedAudio.buffer;
-		// 	fileMimeType = convertedAudio.mimetype;
-		// 	fileName = convertedAudio.filename;
-		// }
+				const ffmpegApiUrl = process.env.FFMPEG_API_URL || 'http://localhost:5004/convert';
+				const convertRes = await fetch(ffmpegApiUrl, {
+					method: 'POST',
+					body: convertFormData,
+				});
+
+				if (!convertRes.ok) {
+					const errorText = await convertRes.text();
+					throw new Error(`Conversion API failed with status ${convertRes.status}: ${errorText}`);
+				}
+
+				const arrayBuffer = await convertRes.arrayBuffer();
+				fileBuffer = Buffer.from(arrayBuffer);
+				fileMimeType = 'audio/ogg; codecs=opus';
+				fileName = fileName.replace(/\.[^/.]+$/, "") + ".ogg";
+			} catch (err) {
+				console.error('Error converting audio via ffmpeg-api:', err);
+
+				throw new BadGatewayException('Ocorreu um erro interno na tratativa do formato de audio, entre em contato com o suporte!');
+			}
+		}
+
+		// Caso o arquivo seja uma imagem webp, converte para jpg
+		if (uploadedFileType === 'image' && fileMimeType === 'image/webp') {
+			try {
+				const convertFormData = new FormData();
+				const imageBlob = new Blob([fileBuffer as any], { type: fileMimeType });
+				convertFormData.append('image', imageBlob, fileName);
+
+				const ffmpegApiUrl = (process.env.FFMPEG_API_URL || 'http://localhost:5004/convert').replace('/convert', '/convert-webp-to-jpg');
+				const convertRes = await fetch(ffmpegApiUrl, {
+					method: 'POST',
+					body: convertFormData,
+				});
+
+				if (!convertRes.ok) {
+					const errorText = await convertRes.text();
+					throw new Error(`Conversion API failed with status ${convertRes.status}: ${errorText}`);
+				}
+
+				const arrayBuffer = await convertRes.arrayBuffer();
+				fileBuffer = Buffer.from(arrayBuffer);
+				fileMimeType = 'image/jpeg';
+				fileName = fileName.replace(/\.[^/.]+$/, "") + ".jpg";
+			} catch (err) {
+				console.error('Error converting image via ffmpeg-api:', err);
+				throw new BadGatewayException('Ocorreu um erro interno na tratativa do formato da imagem, entre em contato com o suporte!');
+			}
+		}
 
 		// Configura o arquivo de mídia para enviar no form-data da requisição
 		const formData = new FormData();
@@ -109,6 +151,7 @@ export class MessageService {
 			type: dto.type,
 			[dto.type]: {
 				id: uploadedMedia.id,
+				...(dto.type === 'audio' ? { voice: true } : {}),
 			},
 		};
 

@@ -28,5 +28,13 @@ services:
             - '5672:5672'
             - '15672:15672'
 
+    ffmpeg-api:
+        build:
+            context: ./docker/ffmpeg-api
+        container_name: whatsapp-ffmpeg-api
+        restart: always
+        ports:
+            - '5004:5004'
+
 volumes:
     postgres_data:
