@@ -156,7 +156,12 @@ export class MessageService {
 			},
 		};
 
-		return this.apiClient.post<MessageSendMediaResponseDto>(phoneId, userToken, '/messages', payload);
+		const response = await this.apiClient.post<MessageSendMediaResponseDto>(phoneId, userToken, '/messages', payload);
+		
+		return {
+			...response,
+			mediaId: uploadedMedia.id,
+		} as any;
 	}
 
 	async downloadMedia(connectionId: number, mediaId: string, res: Response): Promise<void> {
