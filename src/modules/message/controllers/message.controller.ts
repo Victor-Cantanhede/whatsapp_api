@@ -46,4 +46,12 @@ export class MessageController {
 	) {
 		return this.messageUseCase.downloadMedia(connectionId, mediaId, res);
 	}
+
+	@Get('media/:connectionId/:mediaId/base64')
+	async downloadMediaInBase64(
+		@Param('connectionId') connectionId: string,
+		@Param('mediaId') mediaId: string
+	) {
+		return this.messageUseCase.downloadMediaInBase64(connectionId, mediaId);
+	}
 }

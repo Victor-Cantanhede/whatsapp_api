@@ -14,18 +14,21 @@ export class WebhookPayloadMessageDto {
         id: string;
         url: string;
         voice?: boolean;
+        base64?: string;
     };
     video?: {
         mime_type: string;
         sha256: string;
         id: string;
         url: string;
+        base64?: string;
     };
     image?: {
         mime_type: string;
         sha256: string;
         id: string;
         url: string;
+        base64?: string;
     };
     document?: {
         filename: string;
@@ -33,5 +36,6 @@ export class WebhookPayloadMessageDto {
         sha256: string;
         id: string;
         url: string;
+        base64?: string;
     };
 }

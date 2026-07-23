@@ -5,10 +5,15 @@ import * as crypto from 'crypto';
 import { EventMessageReceivedDto } from '../webhooks/dtos/EventMessageReceivedDto';
 import { EventMessageEchoDto } from '../webhooks/dtos/EventMessageEchoDto';
 import { WebhookPayloadMessageDto } from '../webhooks/dtos/WebhookPayloadMessageDto';
+import { MessageService } from '../services/message.service';
+import { convertBufferToBase64 } from '../../../utils/media.utils';
 
 @Controller()
 export class MessageConsumer {
-    constructor(private readonly connectionService: ConnectionService) { }
+    constructor(
+        private readonly connectionService: ConnectionService,
+        private readonly messageService: MessageService
+    ) { }
 
     @EventPattern('meta_webhook_event')
     async handleMetaWebhookEvent(
@@ -81,6 +86,23 @@ export class MessageConsumer {
                         if (message.video) webhookPayload.video = message.video;
                         if (message.image) webhookPayload.image = message.image;
                         if (message.document) webhookPayload.document = message.document;
+
+                        const isBase64Enabled = process.env.RETURN_MEDIA_BASE64 === 'true';
+                        const mediaType = message.type as string;
+                        const mediaData = webhookPayload[mediaType];
+
+                        if (isBase64Enabled && mediaData?.id) {
+                            try {
+                                const { buffer } = await this.messageService.getMediaBuffer(connection.id, mediaData.id);
+
+                                const base64 = convertBufferToBase64(buffer);
+                                if (base64) {
+                                    webhookPayload[mediaType].base64 = base64;
+                                }
+                            } catch (err) {
+                                console.error(`[MessageConsumer] Erro ao obter/converter base64 da mídia ${mediaData.id}:`, err.message);
+                            }
+                        }
 
                         await this.dispatchWebhook(webhookPayload);
                     }

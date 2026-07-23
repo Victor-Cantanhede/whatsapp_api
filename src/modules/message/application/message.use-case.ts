@@ -62,4 +62,24 @@ export class MessageUseCase {
 			res.status(status).json({ success: false, message: err.message || 'Ocorreu um erro ao baixar a mídia!' });
 		}
 	}
+
+	async downloadMediaInBase64(connectionId: string, mediaId: string): Promise<ResponseModel<{ base64: string, mimeType: string }>> {
+		const response = new ResponseModel<{ base64: string, mimeType: string }>();
+
+		try {
+			const data = await this.messageService.downloadMediaInBase64(Number(connectionId), mediaId);
+
+			response.data = data;
+			response.message = 'Mídia em base64 baixada com sucesso!';
+		} catch (error) {
+			const err = error as any;
+
+			response.message = err.message || 'Ocorreu um erro ao baixar a mídia em base64!';
+			response.success = false;
+
+			console.log(error);
+		}
+
+		return response;
+	}
 }

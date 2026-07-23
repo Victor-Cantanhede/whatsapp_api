@@ -4,6 +4,7 @@ import { DbService } from 'src/infrastructure/database/prisma/prisma.service';
 import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType } from '../dtos/MessageSendDto';
 import { WhatsAppApiClient } from 'src/infrastructure/whatsapp-api/whatsapp-api.client';
 import { BadRequestException, BadGatewayException } from '@nestjs/common';
+import { convertBufferToBase64 } from 'src/utils/media.utils';
 
 @Injectable()
 export class MessageService {
@@ -158,13 +159,16 @@ export class MessageService {
 
 		const response = await this.apiClient.post<MessageSendMediaResponseDto>(phoneId, userToken, '/messages', payload);
 		
+		const base64 = process.env.RETURN_MEDIA_BASE64 === 'true' ? convertBufferToBase64(fileBuffer as Buffer) : undefined;
+		
 		return {
 			...response,
 			mediaId: uploadedMedia.id,
+			...(base64 ? { base64 } : {}),
 		} as any;
 	}
 
-	async downloadMedia(connectionId: number, mediaId: string, res: Response): Promise<void> {
+	async getMediaBuffer(connectionId: number, mediaId: string): Promise<{ buffer: Buffer, mimeType: string }> {
 		const connection = await this.db.connections.findUnique({
 			where: { id: connectionId },
 		});
@@ -195,11 +199,21 @@ export class MessageService {
 			throw new BadGatewayException(`Erro ao baixar a mídia: ${response.statusText}`);
 		}
 
-		res.setHeader('Content-Type', mediaMetadata.mime_type);
-
 		const arrayBuffer = await response.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 
+		return { buffer, mimeType: mediaMetadata.mime_type };
+	}
+
+	async downloadMedia(connectionId: number, mediaId: string, res: Response): Promise<void> {
+		const { buffer, mimeType } = await this.getMediaBuffer(connectionId, mediaId);
+		res.setHeader('Content-Type', mimeType);
 		res.send(buffer);
+	}
+
+	async downloadMediaInBase64(connectionId: number, mediaId: string): Promise<{ base64: string, mimeType: string }> {
+		const { buffer, mimeType } = await this.getMediaBuffer(connectionId, mediaId);
+		const base64 = convertBufferToBase64(buffer);
+		return { base64, mimeType };
 	}
 }

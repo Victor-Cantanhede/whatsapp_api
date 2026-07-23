@@ -57,4 +57,7 @@ export class MessageSendMediaResponseDto {
 		},
 	})
 	messages!: Array<{ id: string }>;
+
+	@ApiProperty({ required: false })
+	base64?: string;
 }
