@@ -1,0 +1,27 @@
+# Dependências e artefatos locais (rebuildados dentro da imagem)
+node_modules
+dist
+build
+coverage
+
+# Git / IDE
+.git
+.gitignore
+.vscode
+.idea
+
+# Ambiente e segredos (injetados via env_file / environment no compose)
+.env
+.env.*
+
+# Infra e documentação
+docker-compose*.yml
+.docs
+AGENTS.md
+README.md
+
+# Logs e temporários
+*.log
+logs
+.temp
+.tmp

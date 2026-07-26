@@ -1,0 +1,107 @@
+# Stack de produção
+# Subir com: docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#
+# O `up` aplica as migrations pelo serviço `migrate` antes de iniciar a API.
+# Atenção: `restart api` NÃO reaplica migrations — para isso rode o `up -d` novamente.
+
+# Nome do projeto fixo: isola rede e volumes da stack de desenvolvimento, que roda
+# no mesmo diretório e por padrão usaria o mesmo namespace (derivado do nome da pasta)
+name: whatsapp-api-prod
+
+services:
+    postgres:
+        image: postgres:16
+
+        container_name: whatsapp-api-db-prod
+
+        restart: always
+
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: whatsapp_api
+
+        ports:
+            - '5434:5432'
+
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d whatsapp_api']
+            interval: 10s
+            retries: 5
+
+    rabbitmq:
+        image: rabbitmq:3-management
+        container_name: whatsapp-api-rabbitmq-prod
+        restart: always
+        environment:
+            RABBITMQ_DEFAULT_USER: whatsapp
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+        # Somente o painel de gestão, acessível apenas pelo próprio host
+        ports:
+            - '127.0.0.1:15673:15672'
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
+
+    ffmpeg-api:
+        build:
+            context: ./docker/ffmpeg-api
+        container_name: whatsapp-ffmpeg-api-prod
+        restart: always
+
+    # Aplica as migrations do Prisma e encerra; a API só sobe depois disso
+    migrate:
+        build:
+            context: .
+            dockerfile: docker/api/Dockerfile
+        image: whatsapp-api-prod
+        container_name: whatsapp-api-migrate-prod
+        restart: 'no'
+
+        command: npx prisma migrate deploy
+
+        environment:
+            DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/whatsapp_api?schema=public
+
+        depends_on:
+            postgres:
+                condition: service_healthy
+
+    api:
+        build:
+            context: .
+            dockerfile: docker/api/Dockerfile
+        image: whatsapp-api-prod
+        container_name: whatsapp-api-prod
+        restart: always
+
+        # Credenciais da Meta e configurações do webhook do cliente
+        env_file:
+            - .env.prod
+
+        # Sobrescreve o que o .env.prod aponta para localhost
+        environment:
+            NODE_ENV: production
+            PORT: 5003
+            DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/whatsapp_api?schema=public
+            RABBITMQ_URL: amqp://whatsapp:${RABBITMQ_PASSWORD}@rabbitmq:5672
+            FFMPEG_API_URL: http://ffmpeg-api:5004/convert
+
+        ports:
+            - '5003:5003'
+
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_started
+            ffmpeg-api:
+                condition: service_started
+
+volumes:
+    postgres_data:
+    rabbitmq_data:
