@@ -16,3 +16,14 @@ model Connections {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+/// URLs de webhook dos ambientes de desenvolvimento do time.
+/// A Meta permite apenas uma URL de webhook por app, então a instância de produção
+/// replica cada evento recebido para as URLs cadastradas aqui (tunnels locais).
+model WebhookClientsDev {
+  id        Int      @id @default(autoincrement())
+  url       String   @unique
+  secret    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

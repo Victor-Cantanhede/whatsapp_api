@@ -7,12 +7,17 @@ import { EventMessageEchoDto } from '../webhooks/dtos/EventMessageEchoDto';
 import { WebhookPayloadMessageDto } from '../webhooks/dtos/WebhookPayloadMessageDto';
 import { MessageService } from '../services/message.service';
 import { convertBufferToBase64 } from '../../../utils/media.utils';
+import { WebhookClientDevService } from '../../webhook-client-dev/services/webhook-client-dev.service';
+
+const DEFAULT_DEV_WEBHOOK_TIMEOUT_MS = 5000;
+const DEFAULT_CLIENT_WEBHOOK_TIMEOUT_MS = 15000;
 
 @Controller()
 export class MessageConsumer {
     constructor(
         private readonly connectionService: ConnectionService,
-        private readonly messageService: MessageService
+        private readonly messageService: MessageService,
+        private readonly webhookClientDevService: WebhookClientDevService
     ) { }
 
     @EventPattern('meta_webhook_event')
@@ -118,6 +123,15 @@ export class MessageConsumer {
     }
 
     private async dispatchWebhook(payload: WebhookPayloadMessageDto): Promise<void> {
+        // O corpo é serializado uma única vez e reaproveitado: a assinatura HMAC
+        // precisa ser calculada exatamente sobre os mesmos bytes que serão enviados.
+        const bodyString = JSON.stringify(payload);
+
+        await this.dispatchDevWebhooks(bodyString);
+
+        const isDevEnv = process.env.NODE_ENV === 'development';
+        if (isDevEnv) return;
+
         const url = process.env.CLIENT_WEBHOOK_URL;
         const secret = process.env.CLIENT_WEBHOOK_SECRET;
 
@@ -125,18 +139,64 @@ export class MessageConsumer {
             throw new Error('CLIENT_WEBHOOK_URL ou CLIENT_WEBHOOK_SECRET não configurados.');
         }
 
-        const bodyString = JSON.stringify(payload);
-        const signature = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
-
         console.log(`[MessageConsumer] Enviando payload para webhook cliente (${url})...`);
+
+        const timeoutMs = Number(process.env.CLIENT_WEBHOOK_TIMEOUT_MS) || DEFAULT_CLIENT_WEBHOOK_TIMEOUT_MS;
+        const status = await this.postWebhook(url, secret, bodyString, timeoutMs);
+
+        console.log(`[MessageConsumer] Webhook cliente respondeu com sucesso: ${status}`);
+    }
+
+    /**
+     * Replica o payload para as URLs de webhook dos ambientes de desenvolvimento.
+     * É best-effort: qualquer falha (URL fora do ar, timeout, banco indisponível) é apenas
+     * logada, para nunca impedir a entrega ao webhook de produção.
+     */
+    private async dispatchDevWebhooks(bodyString: string): Promise<void> {
+        try {
+            const devClients = await this.webhookClientDevService.getAll();
+            if (devClients.length === 0) return;
+
+            const timeoutMs = Number(process.env.DEV_WEBHOOK_TIMEOUT_MS) || DEFAULT_DEV_WEBHOOK_TIMEOUT_MS;
+
+            for (const devClient of devClients) {
+                const secret = devClient.secret || process.env.CLIENT_WEBHOOK_SECRET;
+
+                if (!secret) {
+                    console.warn(`[MessageConsumer][dev] Nenhum secret configurado para ${devClient.url}. Enviando sem assinatura.`);
+                }
+
+                try {
+                    console.log(`[MessageConsumer][dev] Enviando payload para webhook de desenvolvimento (${devClient.url})...`);
+
+                    const status = await this.postWebhook(devClient.url, secret, bodyString, timeoutMs);
+
+                    console.log(`[MessageConsumer][dev] Webhook de desenvolvimento respondeu com sucesso: ${status}`);
+                } catch (error) {
+                    console.error(`[MessageConsumer][dev] Erro ao enviar para ${devClient.url}:`, error.message);
+                }
+            }
+        } catch (error) {
+            console.error('[MessageConsumer][dev] Erro ao carregar webhooks de desenvolvimento:', error.message);
+        }
+    }
+
+    /**
+     * Envia o payload já serializado para uma URL, assinando o corpo com HMAC-SHA256.
+     * Retorna o status HTTP em caso de sucesso e lança erro caso a resposta não seja ok.
+     */
+    private async postWebhook(url: string, secret: string | undefined, bodyString: string, timeoutMs: number): Promise<number> {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+        if (secret) {
+            headers['x-webhook-signature'] = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
+        }
 
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-webhook-signature': signature
-            },
-            body: bodyString
+            headers,
+            body: bodyString,
+            signal: AbortSignal.timeout(timeoutMs)
         });
 
         if (!response.ok) {
@@ -144,6 +204,6 @@ export class MessageConsumer {
             throw new Error(`O webhook cliente retornou status ${response.status}: ${errText}`);
         }
 
-        console.log(`[MessageConsumer] Webhook cliente respondeu com sucesso: ${response.status}`);
+        return response.status;
     }
 }

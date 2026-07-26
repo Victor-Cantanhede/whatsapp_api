@@ -30,6 +30,12 @@ A persistência da aplicação é estritamente focada na conexão. A entidade pr
 - `waba_id`: ID da Conta do WhatsApp Business.
 - `phone_id`: ID do número de telefone associado à conta para disparo/recebimento.
 
+Além dela, existe a entidade de infraestrutura de entrega `WebhookClientsDev`. A Meta permite configurar apenas **uma** URL de webhook por aplicativo, o que impediria o time de desenvolvimento de receber eventos reais em seus ambientes locais depois que a URL oficial apontar para produção. Para contornar isso, a instância de produção replica cada evento recebido para as URLs cadastradas nessa tabela antes de entregá-lo ao webhook do cliente:
+- `url`: URL do tunnel de desenvolvimento (ex.: ngrok, cloudflared).
+- `secret`: segredo opcional usado para assinar o payload (HMAC-SHA256); quando nulo, utiliza o `CLIENT_WEBHOOK_SECRET`.
+
+O envio para essas URLs é *best-effort*: falhas são apenas registradas em log e nunca interrompem a entrega ao webhook de produção. Não há endpoints HTTP para gerenciar essa tabela — o cadastro é feito diretamente no banco, de modo a não expor uma superfície pública capaz de redirecionar o tráfego de mensagens.
+
 ## 5. Fluxo de Integração
 1. **Cadastro de Instância (Embedded Signup):** Uma API/Aplicação cliente inicia o fluxo *Embedded Signup* e autentica com o Facebook. Ao extrair o `token`, `waba_id` e `phone_id`, ela faz um POST para o WhatsApp API para registrar a nova conexão.
 2. **Armazenamento Seguro:** A API salva os dados no banco e retorna para a aplicação cliente o identificador gerado (`connectionId`).
