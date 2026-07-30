@@ -153,7 +153,12 @@ export class MessageService {
 			type: dto.type,
 			[dto.type]: {
 				id: uploadedMedia.id,
+
+				// Caso seja uma mensagem de áudio esta config envia como se tivesse gravado
 				...(dto.type === 'audio' ? { voice: true } : {}),
+
+				// Caso seja uma mídia com texto
+				...(dto.caption ? { caption: dto.caption } : {}),
 			},
 		};
 

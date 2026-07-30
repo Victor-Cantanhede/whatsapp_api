@@ -29,6 +29,9 @@ export type MessageType = 'audio' | 'video' | 'image' | 'document' | 'text' | 's
 
 export class MessageSendMediaDto extends MessageSendDto {
 	// Herda connectionId, messaging_product, recipient_type, to, type
+
+	// Caso a mídia venha com uma mensagem de texto
+	caption?: string;
 }
 
 export class MessageSendMediaResponseDto {
