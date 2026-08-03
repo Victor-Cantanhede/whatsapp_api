@@ -22,6 +22,10 @@ export class EventMessageReceivedDto {
           id: string;
           timestamp: string;
           type: 'text' | 'audio' | 'video' | 'image' | 'document' | string;
+          context?: {
+            from: string;
+            id: string;
+          };
           text?: {
             body: string;
           };

@@ -86,6 +86,14 @@ export class MessageConsumer {
                             fromMe: isEcho,
                         };
 
+                        // Caso a mensagem esteja mencionando outra mensagem (responder mensagem)
+                        if (message.context?.from && message.context?.id) {
+                            webhookPayload.quotedMessage = {
+                                from: message.context.from,
+                                id: message.context.id,
+                            };
+                        }
+
                         if (message.text?.body) webhookPayload.text = message.text.body;
                         if (message.audio) webhookPayload.audio = message.audio;
                         if (message.video) webhookPayload.video = message.video;

@@ -27,7 +27,7 @@ export class MessageService {
 			throw new BadRequestException('Text body is required for text messages');
 		}
 
-		const payload: Omit<MessageSendDto, 'connectionId'> = {
+		const payload = {
 			messaging_product: 'whatsapp',
 			recipient_type: 'individual',
 			to: dto.to,
@@ -35,6 +35,9 @@ export class MessageService {
 			text: {
 				body: dto.text.body,
 			},
+
+			// Caso tenha mensagem mencionada
+			...(dto.quotedMessageId ? { context: { message_id: dto.quotedMessageId } } : {}),
 		};
 
 		return this.apiClient.post(connection.phone_id, connection.user_token, '/messages', payload);
@@ -151,6 +154,7 @@ export class MessageService {
 			recipient_type: 'individual',
 			to: dto.to,
 			type: dto.type,
+
 			[dto.type]: {
 				id: uploadedMedia.id,
 
@@ -160,12 +164,15 @@ export class MessageService {
 				// Caso seja uma mídia com texto
 				...(dto.caption ? { caption: dto.caption } : {}),
 			},
+
+			// Caso tenha mensagem mencionada
+			...(dto.quotedMessageId ? { context: { message_id: dto.quotedMessageId } } : {}),
 		};
 
 		const response = await this.apiClient.post<MessageSendMediaResponseDto>(phoneId, userToken, '/messages', payload);
-		
+
 		const base64 = process.env.RETURN_MEDIA_BASE64 === 'true' ? convertBufferToBase64(fileBuffer as Buffer) : undefined;
-		
+
 		return {
 			...response,
 			mediaId: uploadedMedia.id,
