@@ -77,4 +77,27 @@ export class WhatsAppApiClient {
 			this.handleError(endpoint, 'GET', error);
 		}
 	}
+
+	/**
+	 * Helper to perform HTTP DELETE requests to WhatsApp Cloud API.
+	 * @param endpoint The specific endpoint (e.g. '/<WABA_ID>/message_templates')
+	 * @param userToken The User Access Token (from the database)
+	 */
+	async delete<T>(endpoint: string, userToken: string, customHeaders?: Record<string, string>): Promise<T> {
+		try {
+			const headers: Record<string, string> = {
+				Authorization: `Bearer ${userToken}`,
+				...customHeaders,
+			};
+
+			const response = await lastValueFrom(
+				this.httpService.delete<T>(`${this.baseUrl}${endpoint}`, {
+					headers,
+				}),
+			);
+			return response.data;
+		} catch (error: any) {
+			this.handleError(endpoint, 'DELETE', error);
+		}
+	}
 }

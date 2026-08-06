@@ -5,6 +5,7 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { MessageModule } from './modules/message/message.module';
 import { WhatsAppApiModule } from './infrastructure/whatsapp-api/whatsapp-api.module';
 import { WebhookClientDevModule } from './modules/webhook-client-dev/webhook-client-dev.module';
+import { TemplateModule } from './modules/template/template.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -15,6 +16,7 @@ import { AppController } from './app.controller';
 		MessageModule,
 		WhatsAppApiModule,
 		WebhookClientDevModule,
+		TemplateModule,
 	],
 	controllers: [AppController],
 })
