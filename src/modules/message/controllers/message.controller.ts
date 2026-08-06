@@ -2,7 +2,7 @@ import { Body, Controller, Post, Get, Param, Res, UploadedFile, UseInterceptors 
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { MessageSendDto, MessageSendMediaDto } from '../dtos/MessageSendDto';
+import { MessageSendDto, MessageSendMediaDto, MessageSendTemplateDto } from '../dtos/MessageSendDto';
 import { MessageUseCase } from '../application/message.use-case';
 
 @Controller('messages')
@@ -12,6 +12,11 @@ export class MessageController {
 	@Post('text')
 	async sendTextMessage(@Body() dto: MessageSendDto) {
 		return this.messageUseCase.sendTextMessage(dto);
+	}
+
+	@Post('template')
+	async sendTemplateMessage(@Body() dto: MessageSendTemplateDto) {
+		return this.messageUseCase.sendTemplateMessage(dto);
 	}
 
 	@Post('media')

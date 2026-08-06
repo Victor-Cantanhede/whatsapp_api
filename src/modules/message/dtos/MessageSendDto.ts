@@ -22,7 +22,7 @@ export class MessageSendDto {
 	quotedMessageId?: string;
 }
 
-export type MessageType = 'audio' | 'video' | 'image' | 'document' | 'text' | 'sticker';
+export type MessageType = 'audio' | 'video' | 'image' | 'document' | 'text' | 'sticker' | 'template';
 
 export class MessageSendMediaDto extends MessageSendDto {
 	// Herda connectionId, messaging_product, recipient_type, to, type
@@ -30,6 +30,17 @@ export class MessageSendMediaDto extends MessageSendDto {
 	// Caso a mídia venha com uma mensagem de texto
 	@ApiProperty({ required: false })
 	caption?: string;
+}
+
+export class MessageSendTemplateDto {
+	@ApiProperty({ description: 'ID da conexão no banco de dados' })
+	connectionId: number;
+
+	@ApiProperty({ description: 'Número de destino' })
+	to: string;
+
+	@ApiProperty({ description: 'ID do template a ser enviado' })
+	templateId: string;
 }
 
 export class MessageSendMediaResponseDto {

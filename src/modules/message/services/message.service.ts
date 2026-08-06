@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DbService } from 'src/infrastructure/database/prisma/prisma.service';
-import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType } from '../dtos/MessageSendDto';
+import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType, MessageSendTemplateDto } from '../dtos/MessageSendDto';
 import { WhatsAppApiClient } from 'src/infrastructure/whatsapp-api/whatsapp-api.client';
 import { BadRequestException, BadGatewayException } from '@nestjs/common';
 import { convertBufferToBase64 } from 'src/utils/media.utils';
@@ -38,6 +38,39 @@ export class MessageService {
 
 			// Caso tenha mensagem mencionada
 			...(dto.quotedMessageId ? { context: { message_id: dto.quotedMessageId } } : {}),
+		};
+
+		return this.apiClient.post(connection.phone_id, connection.user_token, '/messages', payload);
+	}
+
+	async sendTemplateMessage(dto: MessageSendTemplateDto) {
+		const connectionId = Number(dto.connectionId);
+		const connection = await this.db.connections.findUnique({
+			where: { id: connectionId },
+		});
+
+		if (!connection) {
+			throw new NotFoundException(`Connection with ID ${connectionId} not found`);
+		}
+
+		// Busca o template diretamente da Meta para recuperar o nome antes de enviar
+		const templateData = await this.apiClient.get<any>(`/${dto.templateId}`, connection.user_token);
+
+		if (!templateData || !templateData.name) {
+			throw new NotFoundException(`Template with ID ${dto.templateId} not found in Meta API`);
+		}
+
+		const payload = {
+			messaging_product: 'whatsapp',
+			recipient_type: 'individual',
+			to: dto.to,
+			type: 'template',
+			template: {
+				name: templateData.name,
+				language: {
+					code: 'pt_BR',
+				},
+			},
 		};
 
 		return this.apiClient.post(connection.phone_id, connection.user_token, '/messages', payload);

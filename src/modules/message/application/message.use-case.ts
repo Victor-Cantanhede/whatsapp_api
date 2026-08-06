@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Injectable } from '@nestjs/common';
 import { MessageService } from '../services/message.service';
-import { MessageSendDto, MessageSendMediaDto } from '../dtos/MessageSendDto';
+import { MessageSendDto, MessageSendMediaDto, MessageSendTemplateDto } from '../dtos/MessageSendDto';
 import { ResponseModel } from 'src/shared/models/ResponseModel';
 
 @Injectable()
@@ -21,6 +21,27 @@ export class MessageUseCase {
 			const err = error as any;
 
 			response.message = err.message || 'Ocorreu um erro ao enviar a mensagem de texto!';
+			response.success = false;
+
+			console.log(error);
+		}
+
+		return response;
+	}
+
+	async sendTemplateMessage(dto: MessageSendTemplateDto): Promise<ResponseModel<any>> {
+		const response = new ResponseModel<any>();
+
+		try {
+			const result = await this.messageService.sendTemplateMessage(dto);
+
+			response.data = result;
+			response.message = 'Mensagem de template enviada com sucesso!';
+
+		} catch (error) {
+			const err = error as any;
+
+			response.message = err.message || 'Ocorreu um erro ao enviar a mensagem de template!';
 			response.success = false;
 
 			console.log(error);
