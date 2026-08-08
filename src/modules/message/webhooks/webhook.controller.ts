@@ -4,9 +4,10 @@ import { ClientProxy } from '@nestjs/microservices';
 import { ApiBody } from '@nestjs/swagger';
 import * as crypto from 'crypto';
 import { Request } from 'express';
+import { WebhookEvents } from './constants/webhook.constants';
 
 @Controller('message/webhook')
-export class MessageWebhook {
+export class WebhookController {
 	private readonly wpp_verify_token = process.env.APP_META_WEBHOOK_VERIFY_TOKEN;
 	private readonly wpp_app_secret = process.env.TOKEN_APP_META;
 
@@ -42,7 +43,14 @@ export class MessageWebhook {
 		console.log('WEBHOOK SIGNATURE VERIFIED!');
 
 		try {
-			await lastValueFrom(this.client.emit('meta_webhook_event', data));
+			// 1. Descobrimos quais eventos a Meta enviou neste pacote (webhook)
+			const eventosParaProcessar = this.extrairEventosDoPayload(data);
+
+			// 2. Disparamos um evento no RabbitMQ para cada evento encontrado
+			for (const evento of eventosParaProcessar) {
+				await lastValueFrom(this.client.emit(evento, data));
+			}
+
 			return { success: true };
 		} catch (error) {
 			console.error('Erro ao publicar no RabbitMQ:', error.message);
@@ -79,5 +87,53 @@ export class MessageWebhook {
 			console.warn('Invalid signature mismatch');
 			throw new ForbiddenException('Invalid signature');
 		}
+	}
+
+	/**
+	 * Função auxiliar para extrair todos os tipos de eventos presentes no payload da Meta.
+	 * É útil porque a Meta pode enviar vários eventos agrupados em uma única requisição.
+	 */
+	private extrairEventosDoPayload(data: any): string[] {
+		const eventosEncontrados: string[] = [];
+
+		// Verifica se existe o array "entry", que é o padrão estrutural da Meta
+		const entries = data?.entry || [];
+
+		for (const entry of entries) {
+			const changes = entry.changes || [];
+
+			for (const change of changes) {
+				const tipoDoEvento = change.field;
+
+				// O campo "messages" é especial, pois ele agrupa tanto mensagens quanto atualizações de status
+				if (tipoDoEvento === 'messages') {
+					const dados = change.value;
+
+					// Se tiver a chave "statuses", sabemos que é uma notificação de status (ex: failed, delivered)
+					if (dados?.statuses) {
+						eventosEncontrados.push(WebhookEvents.STATUS_UPDATED);
+					}
+
+					// Se tiver "messages" ou "smb_message_echoes", sabemos que é uma mensagem normal chegando
+					if (dados?.messages || dados?.smb_message_echoes) {
+						eventosEncontrados.push(WebhookEvents.MESSAGE_RECEIVED);
+					}
+				}
+
+				// Para todos os outros eventos (ex: 'security', 'account_alerts') que a Meta possa inventar
+				else if (tipoDoEvento) {
+					console.log(`[Webhook] Evento não mapeado na API: ${tipoDoEvento}`);
+				}
+			}
+		}
+
+		// Se o payload não combinar com nada conhecido, classificamos como vazio
+		if (eventosEncontrados.length === 0) {
+			return [];
+		}
+
+		// Removemos eventos repetidos para não disparar pro RabbitMQ duas vezes à toa
+		// Ex: Se chegar dois status, basta retornar ['meta_webhook_status']
+		return [...new Set(eventosEncontrados)];
 	}
 }

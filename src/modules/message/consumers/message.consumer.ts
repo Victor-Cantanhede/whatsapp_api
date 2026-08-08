@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 import { ConnectionService } from '../../connection/services/connection.service';
 import * as crypto from 'crypto';
+import { WebhookEvents } from '../webhooks/constants/webhook.constants';
 import { EventMessageReceivedDto } from '../webhooks/dtos/EventMessageReceivedDto';
 import { EventMessageEchoDto } from '../webhooks/dtos/EventMessageEchoDto';
 import { WebhookPayloadMessageDto } from '../webhooks/dtos/WebhookPayloadMessageDto';
@@ -20,7 +21,7 @@ export class MessageConsumer {
         private readonly webhookClientDevService: WebhookClientDevService
     ) { }
 
-    @EventPattern('meta_webhook_event')
+    @EventPattern(WebhookEvents.MESSAGE_RECEIVED)
     async handleMetaWebhookEvent(
         @Payload() data: EventMessageReceivedDto | EventMessageEchoDto,
         @Ctx() context: RmqContext
@@ -28,7 +29,7 @@ export class MessageConsumer {
         const channel = context.getChannelRef();
         const originalMsg = context.getMessage();
 
-        console.log('[MessageConsumer] Mensagem recebida da fila meta_webhook_event:');
+        console.log('[MessageConsumer] Mensagem recebida da fila meta_webhook_message:');
 
         try {
             // A Meta manda webhooks em formato batch, na propriedade "entry"
