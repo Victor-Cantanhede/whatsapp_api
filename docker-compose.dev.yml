@@ -27,8 +27,8 @@ services:
             RABBITMQ_DEFAULT_USER: guest
             RABBITMQ_DEFAULT_PASS: guest
         ports:
-            - '5673:5672'
-            - '15673:15672'
+            - '5675:5672'
+            - '15675:15672'
 
     ffmpeg-api:
         build:
