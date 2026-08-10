@@ -11,8 +11,8 @@ import { ConnectionOauthCallbackDto } from '../dtos/ConnectionOauthCallbackDto';
 export class ConnectionUseCase {
 	constructor(
 		private readonly connectionService: ConnectionService,
-		private readonly httpService: HttpService
-	) { }
+		private readonly httpService: HttpService,
+	) {}
 
 	private async getConnectionQuery(fn: () => Promise<ConnectionResponseDto | null>): Promise<ResponseModel<ConnectionResponseDto>> {
 		const response = new ResponseModel<ConnectionResponseDto>();
@@ -56,16 +56,20 @@ export class ConnectionUseCase {
 
 			const webhookUrl = `https://graph.facebook.com/${version}/${dto.waba_id}/subscribed_apps`;
 			await firstValueFrom(
-				this.httpService.post(webhookUrl, {}, {
-					headers: { Authorization: `Bearer ${userToken}` }
-				})
+				this.httpService.post(
+					webhookUrl,
+					{},
+					{
+						headers: { Authorization: `Bearer ${userToken}` },
+					},
+				),
 			);
 
 			const createDto: ConnectionCreateDto = {
 				connection_name: dto.connection_name || 'Nova Conexão Embedded',
 				user_token: userToken,
 				waba_id: dto.waba_id,
-				phone_id: phoneId
+				phone_id: phoneId,
 			} as ConnectionCreateDto;
 
 			return await this.create(createDto);

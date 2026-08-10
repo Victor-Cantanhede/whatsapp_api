@@ -11,7 +11,7 @@ export class MessageService {
 	constructor(
 		private readonly db: DbService,
 		private readonly apiClient: WhatsAppApiClient,
-	) { }
+	) {}
 
 	async sendTextMessage(dto: MessageSendDto) {
 		const connectionId = Number(dto.connectionId);
@@ -76,10 +76,7 @@ export class MessageService {
 		return this.apiClient.post(connection.phone_id, connection.user_token, '/messages', payload);
 	}
 
-	async sendMessageMedia(
-		file: Express.Multer.File,
-		dto: MessageSendMediaDto,
-	): Promise<MessageSendMediaResponseDto> {
+	async sendMessageMedia(file: Express.Multer.File, dto: MessageSendMediaDto): Promise<MessageSendMediaResponseDto> {
 		const connectionId = Number(dto.connectionId);
 		const connection = await this.db.connections.findUnique({
 			where: { id: connectionId },
@@ -128,7 +125,7 @@ export class MessageService {
 				const arrayBuffer = await convertRes.arrayBuffer();
 				fileBuffer = Buffer.from(arrayBuffer);
 				fileMimeType = 'audio/ogg; codecs=opus';
-				fileName = fileName.replace(/\.[^/.]+$/, "") + ".ogg";
+				fileName = fileName.replace(/\.[^/.]+$/, '') + '.ogg';
 			} catch (err) {
 				console.error('Error converting audio via ffmpeg-api:', err);
 
@@ -157,7 +154,7 @@ export class MessageService {
 				const arrayBuffer = await convertRes.arrayBuffer();
 				fileBuffer = Buffer.from(arrayBuffer);
 				fileMimeType = 'image/jpeg';
-				fileName = fileName.replace(/\.[^/.]+$/, "") + ".jpg";
+				fileName = fileName.replace(/\.[^/.]+$/, '') + '.jpg';
 			} catch (err) {
 				console.error('Error converting image via ffmpeg-api:', err);
 				throw new BadGatewayException('Ocorreu um erro interno na tratativa do formato da imagem, entre em contato com o suporte!');
@@ -174,12 +171,10 @@ export class MessageService {
 		formData.append('messaging_product', 'whatsapp');
 
 		// Faz o upload da mídia para o whatsapp para recuperar o mediaId da mensagem
-		const uploadedMedia = await this.apiClient
-			.post<{ id: string }>(phoneId, userToken, '/media', formData)
-			.catch((err) => {
-				console.error('Error uploading media:', err);
-				throw new BadGatewayException('Ocorreu um erro ao enviar o arquivo para o Whatsapp!');
-			});
+		const uploadedMedia = await this.apiClient.post<{ id: string }>(phoneId, userToken, '/media', formData).catch((err) => {
+			console.error('Error uploading media:', err);
+			throw new BadGatewayException('Ocorreu um erro ao enviar o arquivo para o Whatsapp!');
+		});
 
 		// Agora envia a mensagem para o destinatário usando o mediaId
 		const payload = {
@@ -213,7 +208,7 @@ export class MessageService {
 		} as any;
 	}
 
-	async getMediaBuffer(connectionId: number, mediaId: string): Promise<{ buffer: Buffer, mimeType: string }> {
+	async getMediaBuffer(connectionId: number, mediaId: string): Promise<{ buffer: Buffer; mimeType: string }> {
 		const connection = await this.db.connections.findUnique({
 			where: { id: connectionId },
 		});
@@ -223,10 +218,7 @@ export class MessageService {
 		}
 
 		// Buscar metadados da media pra obter a URL
-		const mediaMetadata = await this.apiClient.get<{ url: string, mime_type: string }>(
-			`/${mediaId}`,
-			connection.user_token
-		).catch(err => {
+		const mediaMetadata = await this.apiClient.get<{ url: string; mime_type: string }>(`/${mediaId}`, connection.user_token).catch((err) => {
 			console.error('Error fetching media metadata:', err);
 			throw new BadGatewayException('Ocorreu um erro ao buscar metadados da mídia!');
 		});
@@ -237,7 +229,7 @@ export class MessageService {
 
 		// Baixar o arquivo binário
 		const response = await fetch(mediaMetadata.url, {
-			headers: { Authorization: `Bearer ${connection.user_token}` }
+			headers: { Authorization: `Bearer ${connection.user_token}` },
 		});
 
 		if (!response.ok) {
@@ -256,7 +248,7 @@ export class MessageService {
 		res.send(buffer);
 	}
 
-	async downloadMediaInBase64(connectionId: number, mediaId: string): Promise<{ base64: string, mimeType: string }> {
+	async downloadMediaInBase64(connectionId: number, mediaId: string): Promise<{ base64: string; mimeType: string }> {
 		const { buffer, mimeType } = await this.getMediaBuffer(connectionId, mediaId);
 		const base64 = convertBufferToBase64(buffer);
 		return { base64, mimeType };

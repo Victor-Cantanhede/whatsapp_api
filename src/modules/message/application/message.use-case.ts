@@ -6,7 +6,7 @@ import { ResponseModel } from 'src/shared/models/ResponseModel';
 
 @Injectable()
 export class MessageUseCase {
-	constructor(private readonly messageService: MessageService) { }
+	constructor(private readonly messageService: MessageService) {}
 
 	async sendTextMessage(dto: MessageSendDto): Promise<ResponseModel<any>> {
 		const response = new ResponseModel<any>();
@@ -16,7 +16,6 @@ export class MessageUseCase {
 
 			response.data = result;
 			response.message = 'Mensagem de texto enviada com sucesso!';
-
 		} catch (error) {
 			const err = error as any;
 
@@ -37,7 +36,6 @@ export class MessageUseCase {
 
 			response.data = result;
 			response.message = 'Mensagem de template enviada com sucesso!';
-
 		} catch (error) {
 			const err = error as any;
 
@@ -58,7 +56,6 @@ export class MessageUseCase {
 
 			response.data = result;
 			response.message = 'Mensagem de mídia enviada com sucesso!';
-
 		} catch (error) {
 			const err = error as any;
 
@@ -84,8 +81,8 @@ export class MessageUseCase {
 		}
 	}
 
-	async downloadMediaInBase64(connectionId: string, mediaId: string): Promise<ResponseModel<{ base64: string, mimeType: string }>> {
-		const response = new ResponseModel<{ base64: string, mimeType: string }>();
+	async downloadMediaInBase64(connectionId: string, mediaId: string): Promise<ResponseModel<{ base64: string; mimeType: string }>> {
+		const response = new ResponseModel<{ base64: string; mimeType: string }>();
 
 		try {
 			const data = await this.messageService.downloadMediaInBase64(Number(connectionId), mediaId);

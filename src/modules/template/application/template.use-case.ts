@@ -5,7 +5,7 @@ import { ResponseModel } from 'src/shared/models/ResponseModel';
 
 @Injectable()
 export class TemplateUseCase {
-	constructor(private readonly templateService: TemplateService) { }
+	constructor(private readonly templateService: TemplateService) {}
 
 	async getTemplates(connectionId: number): Promise<ResponseModel<any>> {
 		const response = new ResponseModel<any>();

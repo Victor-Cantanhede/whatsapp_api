@@ -6,4 +6,4 @@ import { DbService } from './prisma.service';
 	providers: [DbService],
 	exports: [DbService],
 })
-export class PrismaModule { }
+export class PrismaModule {}

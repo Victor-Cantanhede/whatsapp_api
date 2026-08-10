@@ -6,7 +6,7 @@ import { ConnectionResponseDto } from '../dtos/ConnectionResponseDto';
 
 @Injectable()
 export class ConnectionService {
-	constructor(private readonly db: DbService) { }
+	constructor(private readonly db: DbService) {}
 
 	async create(dto: ConnectionCreateDto): Promise<ConnectionResponseDto> {
 		try {

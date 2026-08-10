@@ -9,7 +9,7 @@ import { ResponseModel } from 'src/shared/models/ResponseModel';
 
 @Controller('connection')
 export class ConnectionController {
-	constructor(private readonly connectionUseCase: ConnectionUseCase) { }
+	constructor(private readonly connectionUseCase: ConnectionUseCase) {}
 
 	@Get('facebook-config')
 	getFacebookConfig() {

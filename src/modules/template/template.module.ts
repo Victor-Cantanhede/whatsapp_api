@@ -7,4 +7,4 @@ import { TemplateService } from './services/template.service';
 	controllers: [TemplateController],
 	providers: [TemplateUseCase, TemplateService],
 })
-export class TemplateModule { }
+export class TemplateModule {}

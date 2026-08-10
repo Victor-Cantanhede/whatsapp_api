@@ -7,7 +7,7 @@ import { MessageUseCase } from '../application/message.use-case';
 
 @Controller('messages')
 export class MessageController {
-	constructor(private readonly messageUseCase: MessageUseCase) { }
+	constructor(private readonly messageUseCase: MessageUseCase) {}
 
 	@Post('text')
 	async sendTextMessage(@Body() dto: MessageSendDto) {
@@ -36,27 +36,17 @@ export class MessageController {
 			},
 		},
 	})
-	async sendMediaMessage(
-		@UploadedFile() file: Express.Multer.File,
-		@Body() dto: MessageSendMediaDto,
-	) {
+	async sendMediaMessage(@UploadedFile() file: Express.Multer.File, @Body() dto: MessageSendMediaDto) {
 		return this.messageUseCase.sendMediaMessage(file, dto);
 	}
 
 	@Get('media/:connectionId/:mediaId')
-	async downloadMedia(
-		@Param('connectionId') connectionId: string,
-		@Param('mediaId') mediaId: string,
-		@Res() res: Response
-	) {
+	async downloadMedia(@Param('connectionId') connectionId: string, @Param('mediaId') mediaId: string, @Res() res: Response) {
 		return this.messageUseCase.downloadMedia(connectionId, mediaId, res);
 	}
 
 	@Get('media/:connectionId/:mediaId/base64')
-	async downloadMediaInBase64(
-		@Param('connectionId') connectionId: string,
-		@Param('mediaId') mediaId: string
-	) {
+	async downloadMediaInBase64(@Param('connectionId') connectionId: string, @Param('mediaId') mediaId: string) {
 		return this.messageUseCase.downloadMediaInBase64(connectionId, mediaId);
 	}
 }

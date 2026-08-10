@@ -8,7 +8,7 @@ export class TemplateService {
 	constructor(
 		private readonly db: DbService,
 		private readonly apiClient: WhatsAppApiClient,
-	) { }
+	) {}
 
 	async getTemplates(connectionId: number) {
 		const connection = await this.db.connections.findUnique({

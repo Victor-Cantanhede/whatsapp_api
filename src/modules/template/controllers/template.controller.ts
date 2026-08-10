@@ -4,7 +4,7 @@ import { CreateTemplateDto } from '../dtos/TemplateDto';
 
 @Controller('templates')
 export class TemplateController {
-	constructor(private readonly templateUseCase: TemplateUseCase) { }
+	constructor(private readonly templateUseCase: TemplateUseCase) {}
 
 	@Get(':connectionId')
 	async getTemplates(@Param('connectionId') connectionId: string) {
@@ -17,10 +17,7 @@ export class TemplateController {
 	}
 
 	@Delete(':connectionId')
-	async deleteTemplate(
-		@Param('connectionId') connectionId: string,
-		@Query('templateId') templateId: string,
-	) {
+	async deleteTemplate(@Param('connectionId') connectionId: string, @Query('templateId') templateId: string) {
 		return this.templateUseCase.deleteTemplate(Number(connectionId), templateId);
 	}
 }

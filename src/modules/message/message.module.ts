@@ -14,4 +14,4 @@ import { WebhookClientDevModule } from '../webhook-client-dev/webhook-client-dev
 	controllers: [WebhookController, MessageController, MessageConsumer, StatusConsumer],
 	providers: [MessageService, MessageUseCase],
 })
-export class MessageModule { }
+export class MessageModule {}

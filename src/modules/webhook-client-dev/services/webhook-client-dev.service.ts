@@ -4,7 +4,7 @@ import { WebhookClientDevEntity } from '../entity/WebhookClientDevEntity';
 
 @Injectable()
 export class WebhookClientDevService {
-	constructor(private readonly db: DbService) { }
+	constructor(private readonly db: DbService) {}
 
 	/**
 	 * Retorna a entidade crua (e não um ResponseDto) porque o consumer precisa do `secret`,
