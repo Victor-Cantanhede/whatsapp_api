@@ -20,7 +20,7 @@ async function bootstrap() {
 		const darkTheme = theme.getBuffer(SwaggerThemeNameEnum.DRACULA);
 
 		const document = SwaggerModule.createDocument(app, swaggerConfig);
-		SwaggerModule.setup('api/docs', app, document, {
+		SwaggerModule.setup('api/swagger', app, document, {
 			swaggerOptions: {
 				persistAuthorization: true,
 				displayRequestDuration: true,

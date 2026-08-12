@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp API - Developer Tester (Pro DX)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            wa: {
+              bg: '#111b21',
+              panel: '#202c33',
+              chat: '#0b141a',
+              text: '#e9edef',
+              subtext: '#8696a0',
+              green: '#00a884',
+              greenhover: '#008f6f',
+              border: '#222d34',
+              divider: '#2a3942',
+              inputbg: '#2a3942',
+              error: '#ef4444',
+              errorbg: 'rgba(239, 68, 68, 0.1)'
+            }
+          },
+          animation: {
+            'bounce-x': 'bounceX 1.5s infinite',
+          },
+          keyframes: {
+            bounceX: {
+              '0%, 100%': { transform: 'translateX(0)' },
+              '50%': { transform: 'translateX(-25%)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Estilização da Scrollbar no estilo Dark */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .chat-bg {
+      background-color: #0b141a;
+      /* Textura sutil clássica do fundo do WhatsApp */
+      background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M50 50m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0" fill="rgba(255,255,255,0.02)" fill-rule="evenodd"/%3E%3C/svg%3E');
+    }
+
+    /* Validação visual de input */
+    .input-error {
+      border-color: #ef4444 !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
+    }
+  </style>
+</head>
+
+<body class="bg-wa-bg text-wa-text h-screen flex overflow-hidden selection:bg-wa-green selection:text-white">
+
+  <!-- Sidebar (Esquerda) -->
+  <aside class="w-1/3 max-w-[400px] min-w-[300px] flex flex-col border-r border-wa-divider bg-wa-bg z-30 shadow-lg">
+    <!-- Cabeçalho -->
+    <header class="h-16 bg-wa-panel flex items-center px-4 border-b border-wa-divider shrink-0">
+      <div
+        class="w-10 h-10 rounded-full bg-wa-green flex items-center justify-center text-wa-bg font-bold text-lg mr-3 shadow-sm">
+        <svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
+          <path
+            d="M12 2.01c-5.5 0-10 4.49-10 10 0 1.93.55 3.73 1.51 5.26L2 22l4.88-1.42C8.36 21.5 10.12 22 12 22c5.51 0 10-4.5 10-10s-4.49-9.99-10-9.99zm0 18.2c-1.63 0-3.19-.43-4.54-1.21l-3.26.96.98-3.16a8.21 8.21 0 0 1-1.39-4.8c0-4.52 3.69-8.2 8.21-8.2 4.53 0 8.21 3.68 8.21 8.2s-3.68 8.21-8.21 8.21z" />
+        </svg>
+      </div>
+      <h1 class="text-wa-text font-semibold text-lg">WhatsApp API Tester</h1>
+    </header>
+
+    <!-- Barra de Busca -->
+    <div class="p-3 bg-wa-bg border-b border-wa-divider shrink-0">
+      <div class="bg-wa-panel rounded-lg flex items-center px-4 py-2 transition-colors focus-within:bg-wa-inputbg">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 text-wa-subtext mr-3 shrink-0" fill="currentColor">
+          <path
+            d="M15.009 13.805h-.636l-.22-.219a5.184 5.184 0 0 0 1.256-3.386 5.207 5.207 0 1 0-5.207 5.208 5.183 5.183 0 0 0 3.385-1.255l.221.22v.635l4.004 3.999 1.194-1.195-3.997-4.007zm-4.6-8.752a3.948 3.948 0 1 1 0 7.896 3.948 3.948 0 0 1 0-7.896z">
+          </path>
+        </svg>
+        <input type="text" id="search-input" placeholder="Buscar endpoint ou rota..."
+          class="bg-transparent border-none outline-none text-sm w-full text-wa-text placeholder-wa-subtext">
+      </div>
+    </div>
+
+    <!-- Lista de Endpoints -->
+    <div class="flex-1 overflow-y-auto" id="endpoint-list">
+      <!-- Injetado por JS -->
+    </div>
+  </aside>
+
+  <!-- Área Principal (Direita) -->
+  <main class="flex-1 flex flex-col bg-wa-chat chat-bg relative min-h-0 min-w-0">
+
+    <!-- Estado Vazio (Splash Screen) -->
+    <div id="welcome-screen" class="absolute inset-0 flex flex-col items-center justify-center z-10">
+      <div class="w-64 h-64 mb-4 text-wa-divider flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-full h-full drop-shadow-2xl" fill="currentColor">
+          <path
+            d="M12 2.01c-5.5 0-10 4.49-10 10 0 1.93.55 3.73 1.51 5.26L2 22l4.88-1.42C8.36 21.5 10.12 22 12 22c5.51 0 10-4.5 10-10s-4.49-9.99-10-9.99zm0 18.2c-1.63 0-3.19-.43-4.54-1.21l-3.26.96.98-3.16a8.21 8.21 0 0 1-1.39-4.8c0-4.52 3.69-8.2 8.21-8.2 4.53 0 8.21 3.68 8.21 8.2s-3.68 8.21-8.21 8.21z" />
+        </svg>
+      </div>
+      <h2 class="text-3xl font-light text-wa-text mb-4 tracking-wide">WhatsApp API Tester</h2>
+      <div
+        class="flex items-center text-wa-green font-medium bg-wa-panel px-6 py-3 rounded-full shadow-lg border border-wa-divider">
+        <svg class="w-5 h-5 mr-3 animate-bounce-x" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"></path>
+        </svg>
+        Selecione um endpoint na barra lateral para começar
+      </div>
+    </div>
+
+    <!-- Interface do Endpoint Ativo -->
+    <div id="endpoint-interface" class="hidden flex-col h-full flex-1 min-h-0 z-20">
+
+      <!-- Topbar do Endpoint -->
+      <header
+        class="h-16 bg-wa-panel flex items-center px-6 border-b border-wa-divider shadow-sm shrink-0 justify-between">
+        <div class="flex flex-col">
+          <h2 id="ep-title" class="text-wa-text font-semibold text-lg flex items-center">
+            Nome do Endpoint
+          </h2>
+          <span id="ep-subtitle" class="text-wa-subtext text-xs font-mono mt-0.5">
+            <span class="text-green-400 font-bold mr-2">POST</span> /example
+          </span>
+        </div>
+      </header>
+
+      <!-- Corpo Principal (Formulários + Resposta) -->
+      <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col xl:flex-row gap-6 min-h-0">
+
+        <!-- Coluna de Requisição -->
+        <div class="flex-1 flex flex-col space-y-5 min-w-[300px] xl:min-w-[400px]">
+
+          <!-- Configurações Globais -->
+          <div class="bg-wa-panel p-5 rounded-xl shadow-lg border border-wa-divider transition-all">
+            <h3 class="text-wa-green font-semibold mb-4 text-xs uppercase tracking-widest flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                </path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              Ambiente <span class="ml-2 text-wa-error">*</span>
+            </h3>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <div class="flex-1">
+                <label class="block text-wa-subtext text-xs mb-1.5 font-medium">Base URL <span
+                    class="text-wa-error">*</span></label>
+                <input type="text" id="base-url" value="http://localhost:5003"
+                  class="w-full bg-wa-inputbg text-wa-text px-3 py-2 rounded-lg border border-transparent focus:border-wa-green focus:ring-1 focus:ring-wa-green outline-none text-sm transition-all shadow-inner req-input"
+                  placeholder="Ex: http://localhost:3000">
+                <p class="hidden text-wa-error text-[10px] mt-1 italic err-msg">Preenchimento obrigatório</p>
+              </div>
+              <div class="flex-1">
+                <label class="block text-wa-subtext text-xs mb-1.5 font-medium">Authorization (Bearer Token) <span
+                    class="text-wa-error">*</span></label>
+                <input type="password" id="auth-token" placeholder="Insira o token da API"
+                  class="w-full bg-wa-inputbg text-wa-text px-3 py-2 rounded-lg border border-transparent focus:border-wa-green focus:ring-1 focus:ring-wa-green outline-none text-sm transition-all shadow-inner req-input">
+                <p class="hidden text-wa-error text-[10px] mt-1 italic err-msg">Preenchimento obrigatório</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parâmetros e Body -->
+          <div class="bg-wa-panel p-5 rounded-xl shadow-lg border border-wa-divider flex-1 flex flex-col">
+            <h3 class="text-wa-green font-semibold mb-4 text-xs uppercase tracking-widest flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+              </svg>
+              Dados da Requisição
+            </h3>
+
+            <!-- Path Params -->
+            <div id="path-params-container" class="hidden mb-5">
+              <h4 class="text-wa-text text-sm mb-3 font-medium border-b border-wa-divider pb-1">Parâmetros de Rota (Path
+                Parameters)</h4>
+              <div id="path-params-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Query Params -->
+            <div id="query-params-container" class="hidden mb-5">
+              <h4 class="text-wa-text text-sm mb-3 font-medium border-b border-wa-divider pb-1">Parâmetros de Busca
+                (Query Parameters)</h4>
+              <div id="query-params-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Body JSON -->
+            <div id="body-container" class="hidden flex-1 flex flex-col min-h-[250px]">
+              <h4
+                class="text-wa-text text-sm mb-3 font-medium border-b border-wa-divider pb-1 flex justify-between items-center">
+                <span>Corpo da Requisição (JSON Body)</span>
+                <button id="format-json-btn"
+                  class="text-wa-green hover:text-wa-greenhover transition-colors text-xs flex items-center bg-wa-inputbg px-2 py-1 rounded">
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                  </svg> Formatar
+                </button>
+              </h4>
+              <textarea id="body-editor"
+                class="w-full flex-1 bg-[#1e293b] text-[#e2e8f0] font-mono text-sm p-4 rounded-lg border border-transparent focus:border-wa-green outline-none resize-y transition-colors shadow-inner"
+                spellcheck="false"></textarea>
+              <div id="json-error-msg"
+                class="hidden text-wa-error text-xs font-semibold mt-2 flex items-center bg-wa-errorbg px-3 py-2 rounded">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                ⚠️ Erro de sintaxe: verifique vírgulas, aspas duplas ou chaves faltando.
+              </div>
+            </div>
+
+            <!-- Body FormData -->
+            <div id="form-data-container" class="hidden flex-1 flex flex-col min-h-[200px]">
+              <h4 class="text-wa-text text-sm mb-3 font-medium border-b border-wa-divider pb-1">Corpo da Requisição
+                (Upload de Arquivo)</h4>
+
+              <!-- Aviso educativo para Juniores -->
+              <div
+                class="mb-4 bg-blue-900/30 border border-blue-800 rounded-lg p-3 flex items-start text-sm text-blue-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 text-blue-400 mt-0.5" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span><strong>📝 Nota Educativa:</strong> Endpoints de envio de mídia exigem o envio físico do arquivo.
+                  Por isso, ao invés de um JSON comum, usamos o formato <em>Multipart/Form-Data</em>. Os campos abaixo
+                  montam esse formulário para você.</span>
+              </div>
+
+              <div id="form-data-fields" class="space-y-4 bg-wa-bg p-4 rounded-lg border border-wa-divider"></div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+              <button id="send-btn"
+                class="bg-wa-green hover:bg-wa-greenhover disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-wa-bg font-bold py-2.5 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 active:scale-95 flex items-center">
+                <span>Disparar Requisição</span>
+                <svg id="btn-icon" viewBox="0 0 24 24" class="w-4 h-4 ml-2" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna de Resposta -->
+        <div id="response-container"
+          class="flex-1 bg-wa-panel p-5 rounded-xl shadow-lg border border-wa-divider flex flex-col hidden min-w-[300px] xl:min-w-[350px]">
+          <div class="flex justify-between items-center mb-4 border-b border-wa-divider pb-3">
+            <h3 class="text-wa-green font-semibold text-xs uppercase tracking-widest flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              Console de Resposta
+            </h3>
+            <div class="flex space-x-3 text-xs">
+              <span id="res-status"
+                class="px-2 py-1 rounded-md text-white bg-gray-700 font-mono font-semibold shadow-sm">Status: --</span>
+              <span id="res-time"
+                class="px-2 py-1 rounded-md text-wa-text bg-wa-bg border border-wa-divider font-mono shadow-sm">Tempo:
+                --</span>
+            </div>
+          </div>
+
+          <!-- Banner de Erro Empático -->
+          <div id="empathetic-error-banner"
+            class="hidden mb-4 p-3 rounded-lg border flex items-start text-sm shadow-inner">
+            <svg class="w-5 h-5 mr-3 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span id="empathetic-error-text"></span>
+          </div>
+
+          <div class="flex-1 relative group flex flex-col min-h-0">
+            <button id="copy-res-btn"
+              class="absolute top-2 right-2 bg-wa-divider text-wa-subtext hover:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center z-10">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                </path>
+              </svg> Copiar
+            </button>
+            <pre id="response-editor"
+              class="flex-1 min-h-[300px] w-full bg-[#0d1117] text-gray-300 font-mono text-[13px] p-4 rounded-lg overflow-auto border border-[#30363d] whitespace-pre-wrap shadow-inner"></pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- DATABASE Enriquecida com Placeholders e Descriptions (Foolproof UX) ---
+    const schema = [
+      {
+        category: '1. Autenticação & Conexão',
+        endpoints: [
+          {
+            id: 'oauth-callback',
+            name: 'OAuth Callback (Embedded Signup)',
+            method: 'POST',
+            path: '/connection/oauth-callback',
+            body: '{\n  "code": "AQC...",\n  "waba_id": "109...",\n  "connection_name": "Nova Conexão Embedded"\n}'
+          },
+          {
+            id: 'conn-create',
+            name: 'Criar Conexão Manual',
+            method: 'POST',
+            path: '/connection/create',
+            body: '{\n  "connection_name": "Minha API",\n  "user_token": "EAA...",\n  "phone_id": "123456",\n  "waba_id": "654321"\n}'
+          },
+          {
+            id: 'conn-get-all',
+            name: 'Listar Todas as Conexões',
+            method: 'GET',
+            path: '/connection/getAll'
+          },
+          {
+            id: 'conn-get-by-id',
+            name: 'Buscar Conexão por ID',
+            method: 'GET',
+            path: '/connection/getById',
+            queryParams: [{ name: 'id', type: 'number', required: true, description: 'ID numérico interno gerado no banco de dados', placeholder: 'Ex: 1', default: '1' }]
+          },
+          {
+            id: 'conn-get-by-name',
+            name: 'Buscar por Nome',
+            method: 'GET',
+            path: '/connection/getByConnectionName',
+            queryParams: [{ name: 'connection_name', type: 'text', required: true, description: 'Nome exato da conexão que você criou', placeholder: 'Ex: Minha API' }]
+          },
+          {
+            id: 'conn-get-by-phone',
+            name: 'Buscar por Phone ID',
+            method: 'GET',
+            path: '/connection/getByPhoneId',
+            queryParams: [{ name: 'phone_id', type: 'text', required: true, description: 'ID do telefone gerado no painel da Meta', placeholder: 'Ex: 123456789' }]
+          }
+        ]
+      },
+      {
+        category: '2. Envio de Mensagens',
+        endpoints: [
+          {
+            id: 'msg-text',
+            name: 'Enviar Texto Simples',
+            method: 'POST',
+            path: '/messages/text',
+            body: '{\n  "connectionId": 1,\n  "to": "5511999999999",\n  "type": "text",\n  "text": {\n    "body": "Olá, seja bem-vindo ao nosso suporte!"\n  }\n}'
+          },
+          {
+            id: 'msg-template',
+            name: 'Enviar Template',
+            method: 'POST',
+            path: '/messages/template',
+            body: '{\n  "connectionId": 1,\n  "to": "5511999999999",\n  "templateId": "hello_world"\n}'
+          },
+          {
+            id: 'msg-media',
+            name: 'Enviar Mídia (Upload)',
+            method: 'POST',
+            path: '/messages/media',
+            isFormData: true,
+            formDataFields: [
+              { name: 'connectionId', type: 'number', required: true, description: 'ID interno numérico da conexão', placeholder: 'Ex: 1', default: '1' },
+              { name: 'to', type: 'text', required: true, description: 'Número destino com DDI (Ex: 5511999999999)', placeholder: 'Ex: 5511999999999' },
+              { name: 'type', type: 'text', required: true, description: 'audio | video | image | document', placeholder: 'Ex: image' },
+              { name: 'caption', type: 'text', required: false, description: 'Texto da legenda que acompanha a mídia (opcional)', placeholder: 'Ex: Veja essa foto!' }
+            ]
+          }
+        ]
+      },
+      {
+        category: '3. Gestão de Mídias',
+        endpoints: [
+          {
+            id: 'msg-media-download',
+            name: 'Download Mídia (Stream)',
+            method: 'GET',
+            path: '/messages/media/{{connectionId}}/{{mediaId}}',
+            pathParams: [
+              { name: 'connectionId', type: 'number', required: true, description: 'ID interno da conexão', placeholder: 'Ex: 1', default: '1' },
+              { name: 'mediaId', type: 'text', required: true, description: 'ID da mídia que você recebeu via webhook', placeholder: 'Ex: 8734628374' }
+            ]
+          },
+          {
+            id: 'msg-media-base64',
+            name: 'Download Mídia (Base64)',
+            method: 'GET',
+            path: '/messages/media/{{connectionId}}/{{mediaId}}/base64',
+            pathParams: [
+              { name: 'connectionId', type: 'number', required: true, description: 'ID interno da conexão', placeholder: 'Ex: 1', default: '1' },
+              { name: 'mediaId', type: 'text', required: true, description: 'ID da mídia', placeholder: 'Ex: 8734628374' }
+            ]
+          }
+        ]
+      },
+      {
+        category: '4. Gestão de Templates',
+        endpoints: [
+          {
+            id: 'tpl-create',
+            name: 'Criar Template na Meta',
+            method: 'POST',
+            path: '/templates',
+            body: '{\n  "connectionId": 1,\n  "name": "aviso_promocao_01",\n  "category": "MARKETING",\n  "components": [\n    { "type": "BODY", "text": "Temos uma promoção incrível para você!" }\n  ]\n}'
+          },
+          {
+            id: 'tpl-list',
+            name: 'Listar Templates da Conta',
+            method: 'GET',
+            path: '/templates/{{connectionId}}',
+            pathParams: [
+              { name: 'connectionId', type: 'number', required: true, description: 'ID interno da conexão vinculada ao WABA', placeholder: 'Ex: 1', default: '1' }
+            ]
+          },
+          {
+            id: 'tpl-delete',
+            name: 'Excluir Template',
+            method: 'DELETE',
+            path: '/templates/{{connectionId}}',
+            pathParams: [
+              { name: 'connectionId', type: 'number', required: true, description: 'ID interno da conexão', placeholder: 'Ex: 1', default: '1' }
+            ],
+            queryParams: [
+              { name: 'templateId', type: 'text', required: true, description: 'Nome exato do template aprovado', placeholder: 'Ex: hello_world' }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let currentEndpoint = null;
+    let isJsonValid = true;
+
+    // --- RENDERIZAÇÃO DA SIDEBAR ---
+    function renderSidebar() {
+      const list = document.getElementById('endpoint-list');
+      list.innerHTML = '';
+
+      schema.forEach(category => {
+        const catDiv = document.createElement('div');
+        catDiv.className = 'py-2';
+
+        const catTitle = document.createElement('div');
+        catTitle.className = 'px-5 py-2.5 text-wa-green text-xs font-bold tracking-wider uppercase flex items-center';
+        catTitle.innerHTML = category.category;
+        catDiv.appendChild(catTitle);
+
+        category.endpoints.forEach(ep => {
+          const btn = document.createElement('button');
+          btn.className = 'ep-btn w-full text-left px-5 py-3 hover:bg-wa-panel transition-all flex flex-col border-b border-wa-divider group';
+          btn.onclick = () => selectEndpoint(ep, btn);
+
+          const topRow = document.createElement('div');
+          topRow.className = 'flex items-center justify-between mb-1.5 w-full';
+
+          let methodColor, methodBg;
+          switch (ep.method) {
+            case 'GET': methodColor = 'text-blue-400'; methodBg = 'bg-blue-400/10'; break;
+            case 'POST': methodColor = 'text-green-400'; methodBg = 'bg-green-400/10'; break;
+            case 'DELETE': methodColor = 'text-red-400'; methodBg = 'bg-red-400/10'; break;
+            default: methodColor = 'text-yellow-400'; methodBg = 'bg-yellow-400/10'; break;
+          }
+
+          topRow.innerHTML = `
+            <span class="text-wa-text font-medium text-[15px] group-hover:text-white truncate pr-2">${ep.name}</span>
+            <span class="${methodColor} ${methodBg} px-2 py-0.5 rounded text-[10px] font-bold tracking-wide">${ep.method}</span>
+          `;
+
+          const pathRow = document.createElement('div');
+          pathRow.className = 'text-wa-subtext text-xs font-mono truncate opacity-70 group-hover:opacity-100 transition-opacity';
+          pathRow.textContent = ep.path;
+
+          btn.appendChild(topRow);
+          btn.appendChild(pathRow);
+          catDiv.appendChild(btn);
+        });
+
+        list.appendChild(catDiv);
+      });
+    }
+
+    // --- HELPER DE FORMULÁRIO (GERAÇÃO DINÂMICA) ---
+    function generateInput(param, prefix) {
+      const requiredMark = param.required ? '<span class="text-wa-error ml-1">*</span>' : '';
+      const isReqClass = param.required ? 'req-input' : '';
+      return `
+        <div class="flex flex-col">
+          <div class="flex items-center gap-3">
+             <span class="text-wa-subtext text-sm w-32 font-mono text-right shrink-0 font-medium">${prefix === ':' ? '{{' + param.name + '}}' : prefix + param.name}${requiredMark}</span>
+             <input type="${param.type || 'text'}" id="${prefix === ':' ? 'path' : prefix === '?' ? 'query' : 'fd'}-${param.name}" 
+                class="flex-1 bg-wa-inputbg text-wa-text px-3 py-2 rounded border border-wa-divider focus:border-wa-green outline-none text-sm shadow-inner transition-colors ${isReqClass}" 
+                placeholder="${param.placeholder || ''}" value="${param.default || ''}">
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+             <span class="w-32 shrink-0"></span>
+             <span class="flex-1 text-[11px] text-wa-subtext opacity-80">${param.description || ''}</span>
+          </div>
+          <div class="flex items-center gap-3">
+             <span class="w-32 shrink-0"></span>
+             <p class="hidden text-wa-error text-[10px] mt-1 italic err-msg">Preenchimento obrigatório</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- SELEÇÃO DE ENDPOINT ---
+    function selectEndpoint(ep, btnElement) {
+      currentEndpoint = ep;
+
+      // Estilo de Seleção
+      document.querySelectorAll('.ep-btn').forEach(b => {
+        b.classList.remove('bg-wa-panel', 'border-l-4', 'border-l-wa-green');
+        b.classList.add('border-l-0', 'pl-5');
+      });
+      if (btnElement) {
+        btnElement.classList.add('bg-wa-panel', 'border-l-4', 'border-l-wa-green');
+        btnElement.classList.remove('border-l-0', 'pl-5');
+        btnElement.style.paddingLeft = '1.05rem';
+      }
+
+      // Mostrar Interface
+      document.getElementById('welcome-screen').classList.add('hidden');
+      const interface = document.getElementById('endpoint-interface');
+      interface.classList.remove('hidden');
+      interface.classList.add('flex');
+
+      // Cabeçalho do Endpoint
+      document.getElementById('ep-title').innerHTML = ep.name;
+
+      let methodColor;
+      switch (ep.method) {
+        case 'GET': methodColor = 'text-blue-400'; break;
+        case 'POST': methodColor = 'text-green-400'; break;
+        case 'DELETE': methodColor = 'text-red-400'; break;
+        default: methodColor = 'text-yellow-400'; break;
+      }
+      document.getElementById('ep-subtitle').innerHTML = `<span class="${methodColor} font-bold mr-2">${ep.method}</span> ${ep.path}`;
+
+      // Resetar Form e Resposta e Validações
+      document.getElementById('response-container').classList.add('hidden');
+      document.getElementById('empathetic-error-banner').classList.add('hidden');
+      resetValidations();
+
+      // Path params
+      const pathContainer = document.getElementById('path-params-container');
+      const pathList = document.getElementById('path-params-list');
+      if (ep.pathParams && ep.pathParams.length > 0) {
+        pathContainer.classList.remove('hidden');
+        pathList.innerHTML = ep.pathParams.map(p => generateInput(p, ':')).join('');
+      } else {
+        pathContainer.classList.add('hidden');
+      }
+
+      // Query params
+      const queryContainer = document.getElementById('query-params-container');
+      const queryList = document.getElementById('query-params-list');
+      if (ep.queryParams && ep.queryParams.length > 0) {
+        queryContainer.classList.remove('hidden');
+        queryList.innerHTML = ep.queryParams.map(q => generateInput(q, '?')).join('');
+      } else {
+        queryContainer.classList.add('hidden');
+      }
+
+      // Body Container
+      const bodyContainer = document.getElementById('body-container');
+      const formDataContainer = document.getElementById('form-data-container');
+
+      if (ep.isFormData) {
+        bodyContainer.classList.add('hidden');
+        formDataContainer.classList.remove('hidden');
+
+        const fieldsList = document.getElementById('form-data-fields');
+        fieldsList.innerHTML = `
+           <div class="flex flex-col mb-4">
+              <div class="flex items-center gap-3">
+                 <span class="text-wa-subtext text-sm w-32 font-mono text-right shrink-0 font-bold">file<span class="text-wa-error ml-1">*</span></span>
+                 <input type="file" id="fd-file" class="flex-1 text-wa-text text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:font-semibold file:bg-wa-green file:text-wa-bg hover:file:bg-wa-greenhover cursor-pointer transition-colors req-input">
+              </div>
+              <div class="flex items-center gap-3 mt-1">
+                 <span class="w-32 shrink-0"></span>
+                 <span class="flex-1 text-[11px] text-wa-subtext opacity-80">O arquivo físico que será enviado para a Meta.</span>
+              </div>
+              <div class="flex items-center gap-3">
+                 <span class="w-32 shrink-0"></span>
+                 <p class="hidden text-wa-error text-[10px] mt-1 italic err-msg">Arquivo obrigatório</p>
+              </div>
+           </div>
+        ` + (ep.formDataFields || []).map(f => generateInput(f, '')).join('');
+
+      } else if (ep.body || ['POST', 'PUT', 'PATCH'].includes(ep.method)) {
+        formDataContainer.classList.add('hidden');
+        bodyContainer.classList.remove('hidden');
+        document.getElementById('body-editor').value = ep.body || '{\n  \n}';
+        validateJsonEditor(); // Força validação inicial
+      } else {
+        bodyContainer.classList.add('hidden');
+        formDataContainer.classList.add('hidden');
+      }
+    }
+
+    // --- VALIDAÇÃO PREVENTIVA ---
+    function resetValidations() {
+      document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      document.querySelectorAll('.err-msg').forEach(el => el.classList.add('hidden'));
+      document.getElementById('body-editor').classList.remove('input-error');
+      document.getElementById('json-error-msg').classList.add('hidden');
+      document.getElementById('send-btn').disabled = false;
+      isJsonValid = true;
+    }
+
+    function validateRequiredFields() {
+      let isValid = true;
+      resetValidations(); // Limpa erros antigos
+
+      // Busca todos inputs que têm classe req-input visíveis no DOM
+      const reqInputs = document.querySelectorAll('.req-input');
+
+      reqInputs.forEach(input => {
+        // Checa se o input está dentro de um container visível
+        if (input.closest('.hidden')) return;
+
+        let isEmpty = false;
+        if (input.type === 'file') {
+          if (input.files.length === 0) isEmpty = true;
+        } else {
+          if (input.value.trim() === '') isEmpty = true;
+        }
+
+        if (isEmpty) {
+          isValid = false;
+          input.classList.add('input-error');
+          const errorMsg = input.parentElement.parentElement.querySelector('.err-msg');
+          if (errorMsg) errorMsg.classList.remove('hidden');
+        }
+      });
+
+      return isValid;
+    }
+
+    function validateJsonEditor() {
+      const editor = document.getElementById('body-editor');
+      const errorMsg = document.getElementById('json-error-msg');
+      const btn = document.getElementById('send-btn');
+
+      if (editor.closest('.hidden')) return true; // Se o editor não estiver visível, json não importa
+
+      try {
+        const val = editor.value.trim();
+        if (val) JSON.parse(val);
+
+        editor.classList.remove('input-error');
+        errorMsg.classList.add('hidden');
+        isJsonValid = true;
+        btn.disabled = false;
+        return true;
+      } catch (e) {
+        editor.classList.add('input-error');
+        errorMsg.classList.remove('hidden');
+        isJsonValid = false;
+        btn.disabled = true;
+        return false;
+      }
+    }
+
+    document.getElementById('body-editor').addEventListener('input', validateJsonEditor);
+
+    // --- TRATAMENTO EMPÁTICO DE ERROS HTTP ---
+    function showEmpatheticError(status) {
+      const banner = document.getElementById('empathetic-error-banner');
+      const text = document.getElementById('empathetic-error-text');
+
+      banner.classList.remove('hidden', 'bg-red-900/30', 'border-red-800', 'text-red-200', 'bg-yellow-900/30', 'border-yellow-800', 'text-yellow-200');
+
+      if (status === 400) {
+        banner.classList.add('bg-yellow-900/30', 'border-yellow-800', 'text-yellow-200');
+        text.innerHTML = "<strong>Ops! O backend recusou os dados (Bad Request).</strong> Verifique se você digitou algum parâmetro incorretamente (ex: texto em campo numérico, ou formato de telefone inválido). Dê uma olhada no JSON abaixo.";
+      } else if (status === 401 || status === 403) {
+        banner.classList.add('bg-red-900/30', 'border-red-800', 'text-red-200');
+        text.innerHTML = "<strong>Acesso negado (Unauthorized)!</strong> Tem certeza que seu Bearer Token está correto e foi preenchido corretamente na aba de Ambiente ali em cima?";
+      } else if (status === 404) {
+        banner.classList.add('bg-yellow-900/30', 'border-yellow-800', 'text-yellow-200');
+        text.innerHTML = "<strong>Rota não encontrada (Not Found).</strong> A API não achou o caminho. Verifique se você preencheu os Parâmetros de Rota corretamente ou se a base URL está exata.";
+      } else if (status >= 500) {
+        banner.classList.add('bg-red-900/30', 'border-red-800', 'text-red-200');
+        text.innerHTML = "<strong>Erro Crítico (Internal Server Error).</strong> O backend quebrou ao processar sua requisição. Pode ser um bug lá no código do servidor.";
+      } else {
+        banner.classList.add('hidden'); // Sem mensagem empática específica
+      }
+    }
+
+    // --- MOTOR HTTP COM FETCH ---
+    async function sendRequest() {
+      if (!currentEndpoint) return;
+
+      // Validação PREVENTIVA (Anti-Burro)
+      if (!validateRequiredFields()) {
+        return; // Interrompe o envio se houver campos obrigatórios vazios
+      }
+      if (!isJsonValid) {
+        return; // Interrompe se o JSON estiver vermelho
+      }
+
+      const baseUrl = document.getElementById('base-url').value.replace(/\/$/, '');
+      const token = document.getElementById('auth-token').value;
+
+      let finalPath = currentEndpoint.path;
+
+      if (currentEndpoint.pathParams) {
+        currentEndpoint.pathParams.forEach(p => {
+          const val = document.getElementById(`path-${p.name}`).value;
+          finalPath = finalPath.replace(`{{${p.name}}}`, encodeURIComponent(val));
+        });
+      }
+
+      if (currentEndpoint.queryParams) {
+        const qs = new URLSearchParams();
+        currentEndpoint.queryParams.forEach(q => {
+          const val = document.getElementById(`query-${q.name}`).value;
+          if (val) qs.append(q.name, val);
+        });
+        const qsString = qs.toString();
+        if (qsString) finalPath += `?${qsString}`;
+      }
+
+      const url = baseUrl + finalPath;
+      const options = {
+        method: currentEndpoint.method,
+        headers: {}
+      };
+
+      if (token) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      if (currentEndpoint.isFormData) {
+        const fd = new FormData();
+        const fileInput = document.getElementById('fd-file');
+        if (fileInput && fileInput.files.length > 0) {
+          fd.append('file', fileInput.files[0]);
+        }
+        if (currentEndpoint.formDataFields) {
+          currentEndpoint.formDataFields.forEach(f => {
+            const val = document.getElementById(`fd-${f.name}`).value;
+            if (val) fd.append(f.name, val);
+          });
+        }
+        options.body = fd;
+      } else if (currentEndpoint.body || ['POST', 'PUT', 'PATCH'].includes(currentEndpoint.method)) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = document.getElementById('body-editor').value; // Já está validado
+      }
+
+      // Estado de Loading Visual
+      const btn = document.getElementById('send-btn');
+      const originalBtnText = btn.innerHTML;
+      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-wa-bg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Disparando...`;
+      btn.disabled = true;
+      btn.classList.add('opacity-75', 'cursor-wait');
+
+      document.getElementById('response-container').classList.remove('hidden');
+      document.getElementById('empathetic-error-banner').classList.add('hidden');
+      document.getElementById('response-editor').innerHTML = '<div class="flex items-center text-wa-subtext"><svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Aguardando resposta do servidor...</div>';
+
+      const startTime = performance.now();
+
+      try {
+        const response = await fetch(url, options);
+        const endTime = performance.now();
+
+        // Status e Tempo
+        const statusEl = document.getElementById('res-status');
+        statusEl.textContent = `Status: ${response.status} ${response.statusText}`;
+        statusEl.className = `px-2 py-1 rounded-md text-white font-mono font-semibold shadow-sm ${response.ok ? 'bg-green-600' : 'bg-red-600'}`;
+        document.getElementById('res-time').textContent = `Tempo: ${Math.round(endTime - startTime)}ms`;
+
+        if (!response.ok) {
+          showEmpatheticError(response.status);
+        }
+
+        // Output
+        const contentType = response.headers.get('content-type') || '';
+        const editor = document.getElementById('response-editor');
+
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          editor.textContent = JSON.stringify(data, null, 2);
+          syntaxHighlight(editor);
+        } else if (contentType.includes('image') || contentType.includes('audio') || contentType.includes('video') || contentType.includes('application/pdf')) {
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          editor.innerHTML = `<div class="flex flex-col items-start"><span class="mb-4 text-wa-green">✅ Arquivo binário recebido com sucesso (${Math.round(blob.size / 1024)} KB)</span><a href="${objectUrl}" target="_blank" class="bg-wa-inputbg hover:bg-wa-divider text-wa-text px-4 py-2 rounded border border-wa-divider transition-colors flex items-center"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Visualizar / Download</a></div>`;
+        } else {
+          const text = await response.text();
+          editor.textContent = text || '<Resposta Vazia>';
+        }
+
+      } catch (err) {
+        document.getElementById('res-status').textContent = 'Status: Erro de Rede (Falha Grave)';
+        document.getElementById('res-status').className = 'px-2 py-1 rounded-md text-white bg-red-600 font-mono font-semibold shadow-sm';
+        document.getElementById('res-time').textContent = 'Tempo: --';
+
+        const banner = document.getElementById('empathetic-error-banner');
+        banner.classList.remove('hidden', 'bg-yellow-900/30', 'border-yellow-800', 'text-yellow-200');
+        banner.classList.add('bg-red-900/30', 'border-red-800', 'text-red-200');
+        document.getElementById('empathetic-error-text').innerHTML = "<strong>A requisição sequer chegou no backend!</strong> Isso geralmente acontece por 3 motivos:<br>1. A API está offline (esqueceu o npm run dev?).<br>2. O endereço do <em>Base URL</em> está incorreto.<br>3. Problemas de CORS (O NestJS precisa estar com app.enableCors() habilitado no main.ts).";
+
+        document.getElementById('response-editor').innerHTML = `<span class="text-red-400">Erro Técnico:\n${err.toString()}</span>`;
+      } finally {
+        btn.innerHTML = originalBtnText;
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-wait');
+      }
+    }
+
+    // --- UTILITÁRIOS ---
+    function syntaxHighlight(block) {
+      let json = block.innerHTML;
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const re = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g;
+      const highlighted = json.replace(re, function (match) {
+        let cls = 'text-blue-300';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'text-wa-green font-semibold';
+          } else {
+            cls = 'text-yellow-200';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'text-purple-400 font-semibold';
+        } else if (/null/.test(match)) {
+          cls = 'text-gray-500 italic';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+      block.innerHTML = highlighted;
+    }
+
+    document.getElementById('format-json-btn').addEventListener('click', () => {
+      if (!isJsonValid) return; // Só formata se estiver válido
+      try {
+        const editor = document.getElementById('body-editor');
+        const parsed = JSON.parse(editor.value);
+        editor.value = JSON.stringify(parsed, null, 2);
+      } catch (e) { }
+    });
+
+    document.getElementById('copy-res-btn').addEventListener('click', () => {
+      const text = document.getElementById('response-editor').innerText;
+      navigator.clipboard.writeText(text);
+      const btn = document.getElementById('copy-res-btn');
+      const oldHtml = btn.innerHTML;
+      btn.innerHTML = 'Copiado!';
+      setTimeout(() => btn.innerHTML = oldHtml, 2000);
+    });
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const val = e.target.value.toLowerCase();
+      const buttons = document.querySelectorAll('.ep-btn');
+      buttons.forEach(btn => {
+        const text = btn.innerText.toLowerCase();
+        if (text.includes(val)) {
+          btn.style.display = 'flex';
+        } else {
+          btn.style.display = 'none';
+        }
+      });
+    });
+
+    // Event Listeners
+    document.getElementById('send-btn').addEventListener('click', sendRequest);
+
+    // Iniciar
+    renderSidebar();
+  </script>
+</body>
+
+</html>

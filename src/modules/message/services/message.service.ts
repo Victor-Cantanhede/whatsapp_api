@@ -189,8 +189,8 @@ export class MessageService {
 				// Caso seja uma mensagem de áudio esta config envia como se tivesse gravado
 				...(dto.type === 'audio' ? { voice: true } : {}),
 
-				// Caso seja uma mídia com texto
-				...(dto.caption ? { caption: dto.caption } : {}),
+				// Caso seja uma mídia com texto (áudio não suporta caption)
+				...(dto.caption && dto.type !== 'audio' ? { caption: dto.caption } : {}),
 			},
 
 			// Caso tenha mensagem mencionada
