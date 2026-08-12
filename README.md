@@ -1,98 +1,105 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🟢 WhatsApp API Gateway
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> **Elevator Pitch:** Este projeto atua como uma camada intermediária (middleware/gateway) totalmente desacoplada para facilitar a integração com a **WhatsApp Cloud API oficial da Meta**. Ele abstrai a complexidade do envio e recebimento de mensagens (webhooks), gestão de credenciais seguras e fluxos de autenticação (Embedded Signup). Com esta API, qualquer sistema pode enviar mensagens no WhatsApp informando apenas um ID interno e chamando rotas padronizadas, sem precisar conhecer a fundo as regras burocráticas da Meta.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 📚 Guia de Documentação (Onde Encontrar as Regras)
 
-## Project setup
+Aprender a consumir esta API é um processo simples. Preparamos uma documentação técnica e um ambiente interativo prático para você.
 
+1. **Documentação Técnica Oficial:**
+   - Para entender o negócio, a arquitetura, as tabelas do banco e o fluxo exato de cada endpoint, leia sempre a documentação estática gerada na pasta `.docs/`:
+   - 👉 **[Ler API_DOCUMENTATION.md](./.docs/API_DOCUMENTATION.md)**
+   - 👉 **[Ler Product Requirements (PRD)](./.docs/PRD.md)**
+
+2. **Testador Interativo (Playground DX):**
+   - Nossa API possui uma interface de testes ("API Tester") inspirada no WhatsApp Web, feita especialmente para você entender o funcionamento na prática sem precisar configurar o Postman.
+   - **Como acessar:** Basta subir a aplicação (veja os passos abaixo) e acessar no seu navegador: `http://localhost:5003/api/docs`
+   - *(Atenção: essa rota interativa só fica disponível quando `NODE_ENV=development`)*.
+
+---
+
+## 🛠️ Pré-requisitos de Instalação
+
+Antes de começar, certifique-se de que sua máquina possui as seguintes ferramentas:
+
+- **Node.js** (v20+ recomendado, compatível com a stack do NestJS 11)
+- **Gerenciador de pacotes** (npm, ou opcionalmente yarn/pnpm)
+- **Docker e Docker Compose** (necessários para subir os serviços locais do Banco de Dados PostgreSQL, RabbitMQ e FFMPEG-API).
+
+---
+
+## ⚙️ Configuração de Ambiente (.env)
+
+O sistema exige a presença de um arquivo `.env` configurado. Existe um arquivo modelo `.env.dev` que você pode usar de base para começar no ambiente local.
+
+Copie o modelo usando o comando:
 ```bash
-$ npm install
+cp .env.dev .env
 ```
 
-## Compile and run the project
+Abaixo está o dicionário das variáveis principais:
 
+| Variável | Obrigatório | Padrão (Local) | Descrição |
+|----------|-------------|----------------|-----------|
+| `NODE_ENV` | Sim | `development` | Define o ambiente (`development` ou `production`). |
+| `PORT` | Não | `5003` | Porta de execução da API Nest. |
+| `DATABASE_URL` | Sim | *Ver .env.dev* | String de conexão com o PostgreSQL (ex: localhost:5434). |
+| `RABBITMQ_URL` | Sim | *Ver .env.dev* | String de conexão com o RabbitMQ (ex: localhost:5673). |
+| `CLOUD_API_VERSION` | Sim | `v25.0` | Versão da Cloud API da Meta a ser consultada. |
+| `TOKEN_APP_META` | Sim | - | App Secret/Token de acesso raiz do aplicativo na Meta. |
+| `META_APP_ID` | Sim | - | ID do Aplicativo registrado no painel da Meta. |
+| `META_CONFIGURATION_ID` | Sim | - | ID da Configuração do fluxo Embedded Signup do Facebook. |
+| `APP_META_WEBHOOK_VERIFY_TOKEN`| Sim | - | Segredo de validação para configurar o Webhook lá no painel da Meta. |
+| `CLIENT_WEBHOOK_URL` | Sim | - | URL da sua aplicação (client) que receberá o webhook das mensagens. |
+| `CLIENT_WEBHOOK_SECRET` | Sim | - | Segredo usado para assinar o webhook e garantir segurança ao cliente. |
+| `FFMPEG_API_URL` | Sim | *Ver .env.dev* | URL do microserviço Docker FFMPEG para conversão de aúdios. |
+
+---
+
+## 🚀 Rodando o Projeto Localmente
+
+Siga o passo a passo de "copiar e colar" para colocar a API de pé em menos de 5 minutos:
+
+### 1. Inicialize a Infraestrutura (Docker)
+Antes de ligar a aplicação Node, precisamos que o banco de dados (PostgreSQL), o sistema de filas (RabbitMQ) e a API de conversão de mídia (FFMPEG) estejam rodando:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Subindo os containers do ambiente de desenvolvimento em segundo plano
+docker-compose -f docker-compose.dev.yml up -d
 ```
 
-## Run tests
-
+### 2. Instale as Dependências e Sincronize o Banco
+Baixe os pacotes NPM e aplique a estrutura de tabelas no banco de dados via Prisma:
 ```bash
-# unit tests
-$ npm run test
+npm install
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Aplica as migrations criando as tabelas localmente
+npx prisma migrate dev
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### 3. Inicie o Servidor de Desenvolvimento
+Inicie a aplicação NestJS em modo `watch` (hot-reload):
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+✅ O servidor iniciará. Você deverá ver logs do Nest indicando "Nest application successfully started".
+Você pode acessar a interface de testes local no navegador através da rota:  
+🔗 **[http://localhost:5003/api/docs](http://localhost:5003/api/docs)**
 
-## Resources
+### 4. Rodando os Testes (Opcional)
+Se precisar garantir a integridade dos módulos através do Jest:
+```bash
+npm run test
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+<p align="center">Desenvolvido com ☕ pela nossa equipe de Engenharia.</p>
