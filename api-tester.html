@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WhatsApp API - Developer Tester (Pro DX)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -42,6 +43,19 @@
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Estilos do Botão Facebook e Loading */
+    .btn-facebook {
+      background-color: #1877F2;
+      color: #FFFFFF;
+      transition: background-color 0.2s ease;
+    }
+    .btn-facebook:hover {
+      background-color: #166FE5;
+    }
+    .btn-facebook svg {
+      fill: currentColor;
     }
 
     /* Estilização da Scrollbar no estilo Dark */
@@ -207,6 +221,35 @@
               <h4 class="text-wa-text text-sm mb-3 font-medium border-b border-wa-divider pb-1">Parâmetros de Busca
                 (Query Parameters)</h4>
               <div id="query-params-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Facebook Login Docs & Button (Exibido apenas no oauth-callback) -->
+            <div id="facebook-docs-container" class="hidden mb-5 bg-[#1877F2]/10 border border-[#1877F2]/30 p-5 rounded-xl text-sm transition-all shadow-md">
+              <h4 class="text-[#1877F2] font-semibold mb-3 flex items-center text-sm uppercase tracking-wide">
+                <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+                Integração Embedded Signup (Login com Facebook)
+              </h4>
+              <p class="text-blue-100/90 mb-3 leading-relaxed text-[13px]">
+                Na sua aplicação final, você não envia formulários tradicionais para logar um usuário. Você deve utilizar o <a href="https://developers.facebook.com/docs/whatsapp/embedded-signup" target="_blank" class="underline hover:text-blue-300 font-medium">SDK do Facebook</a>. O desenvolvedor chama <code class="bg-[#1877F2]/20 px-1.5 py-0.5 rounded text-blue-200">FB.login()</code> e a Meta abre um pop-up seguro.
+              </p>
+              <p class="text-blue-100/90 mb-4 leading-relaxed text-[13px]">
+                Ao final do fluxo, a Meta retorna um <strong>código de autorização (code)</strong>. É esse <code>code</code> que a sua aplicação frontend envia para o nosso backend resgatar os tokens e vincular o WABA ID. <strong>Teste o fluxo clicando no botão abaixo:</strong>
+              </p>
+              
+              <div class="flex flex-col sm:flex-row items-center gap-4 border-t border-[#1877F2]/20 pt-4">
+                <button id="fb-login-btn" onclick="window.launchWhatsAppSignup()" class="btn-facebook flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm w-full sm:w-auto shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  Simular Login com Facebook
+                </button>
+                <div id="fb-loading-state" class="hidden items-center gap-2 text-blue-300 text-sm font-medium">
+                  <svg class="animate-spin h-5 w-5 text-[#1877F2]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <span>Carregando interface da Meta...</span>
+                </div>
+              </div>
             </div>
 
             <!-- Body JSON -->
@@ -460,6 +503,113 @@
     let currentEndpoint = null;
     let isJsonValid = true;
 
+    // --- FACEBOOK SDK E CONFIGURAÇÃO ---
+    let metaConfig = null;
+    
+    async function loadFacebookConfig() {
+      try {
+        const baseUrl = document.getElementById('base-url').value.replace(/\/$/, '') || 'http://localhost:5003';
+        const response = await fetch(`${baseUrl}/connection/facebook-config`);
+        metaConfig = await response.json();
+        
+        if (window.FB && typeof window.FB.init === 'function') {
+          initFacebookSDK();
+        }
+      } catch (err) {
+        console.error('Erro ao carregar configs do Meta. Certifique-se que o backend está rodando.', err);
+      }
+    }
+
+    function initFacebookSDK() {
+      if (metaConfig && window.FB) {
+        FB.init({
+          appId: metaConfig.appId,
+          autoLogAppEvents: true,
+          xfbml: true,
+          version: metaConfig.version,
+        });
+      }
+    }
+
+    window.fbAsyncInit = function () {
+      initFacebookSDK();
+    };
+
+    window.addEventListener('DOMContentLoaded', loadFacebookConfig);
+    // Recarregar configurações se o usuário alterar a Base URL manualmente
+    document.getElementById('base-url').addEventListener('change', loadFacebookConfig);
+
+    window.addEventListener('message', (event) => {
+      if (!event.origin.endsWith('facebook.com')) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'WA_EMBEDDED_SIGNUP') {
+          const waba_id = data.data.waba_id;
+          
+          // Aguarda o callback fechar e atualizar o fbCode
+          setTimeout(() => {
+            if(window._tempFbCode) {
+              preencherEValidarJSON(window._tempFbCode, waba_id);
+              window._tempFbCode = null;
+            }
+          }, 500);
+        }
+      } catch (err) {}
+    });
+
+    const fbLoginCallback = (response) => {
+      document.getElementById('fb-login-btn').style.display = 'flex';
+      document.getElementById('fb-loading-state').classList.replace('flex', 'hidden');
+
+      if (response.authResponse) {
+        window._tempFbCode = response.authResponse.code;
+      } else {
+        console.warn('Login com Facebook cancelado ou falhou.');
+      }
+    };
+
+    window.launchWhatsAppSignup = () => {
+      if (!metaConfig) {
+        alert('As configurações do Facebook ainda não foram carregadas. Verifique se o servidor está rodando e a Base URL está correta.');
+        return;
+      }
+
+      document.getElementById('fb-login-btn').style.display = 'none';
+      document.getElementById('fb-loading-state').classList.replace('hidden', 'flex');
+
+      FB.login(fbLoginCallback, {
+        config_id: metaConfig.configId,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          version: 'v3',
+          setup: {
+            featureType: 'whatsapp_business_app_onboarding',
+          },
+        },
+      });
+    };
+
+    function preencherEValidarJSON(code, waba_id) {
+      const jsonTemplate = `{
+  "code": "${code}",
+  "waba_id": "${waba_id}",
+  "connection_name": "Nova Conexão Embedded"
+}`;
+      const editor = document.getElementById('body-editor');
+      editor.value = jsonTemplate;
+      validateJsonEditor();
+      
+      // Scroll até o botão de enviar
+      document.getElementById('send-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Flash animado no editor para chamar atenção
+      editor.classList.add('ring-2', 'ring-[#1877F2]', 'bg-[#1877F2]/10', 'transition-all');
+      setTimeout(() => {
+         editor.classList.remove('ring-2', 'ring-[#1877F2]', 'bg-[#1877F2]/10');
+      }, 1500);
+    }
+
     // --- RENDERIZAÇÃO DA SIDEBAR ---
     function renderSidebar() {
       const list = document.getElementById('endpoint-list');
@@ -591,8 +741,15 @@
       }
 
       // Body Container
+      const fbDocsContainer = document.getElementById('facebook-docs-container');
       const bodyContainer = document.getElementById('body-container');
       const formDataContainer = document.getElementById('form-data-container');
+
+      if (ep.id === 'oauth-callback') {
+        fbDocsContainer.classList.remove('hidden');
+      } else {
+        fbDocsContainer.classList.add('hidden');
+      }
 
       if (ep.isFormData) {
         bodyContainer.classList.add('hidden');
