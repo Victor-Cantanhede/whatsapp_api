@@ -93,6 +93,27 @@ curl -X POST https://sua-api.com/connection/create \
 }
 ```
 
+### `DELETE /connection/:id/disconnect`
+- **Descrição Didática:** Efetua a desconexão lógica (Hard Delete) do número na nossa base de dados local. Devido às restrições da Meta para contas modelo SMB (Embedded Signup), a API não possui permissão para forçar o `deregister` remoto. Portanto, o encerramento total do ciclo de vida requer que o usuário também revogue o acesso manualmente pelo painel do Meta Business Suite / WhatsApp Manager.
+- **Parâmetros de Rota (Path):**
+  - `:id` (numérico): O `connectionId` da conta a ser desconectada.
+
+- **Exemplo de Requisição (cURL):**
+```bash
+curl -X DELETE https://sua-api.com/connection/1/disconnect \
+  -H "Authorization: Bearer TOKEN"
+```
+
+- **Exemplo de Resposta:**
+```json
+// SUCESSO
+{
+  "success": true,
+  "message": "Conexão desconectada e removida com sucesso.",
+  "data": null
+}
+```
+
 ### Endpoints de Consulta de Conexão
 Para encontrar IDs e gerenciar contas cadastradas:
 - `GET /connection/getAll`: Lista todas.

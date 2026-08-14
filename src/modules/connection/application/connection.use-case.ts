@@ -12,7 +12,7 @@ export class ConnectionUseCase {
 	constructor(
 		private readonly connectionService: ConnectionService,
 		private readonly httpService: HttpService,
-	) {}
+	) { }
 
 	private async getConnectionQuery(fn: () => Promise<ConnectionResponseDto | null>): Promise<ResponseModel<ConnectionResponseDto>> {
 		const response = new ResponseModel<ConnectionResponseDto>();
@@ -141,5 +141,30 @@ export class ConnectionUseCase {
 
 	async getByWabaId(waba_id: string): Promise<ResponseModel<ConnectionResponseDto>> {
 		return this.getConnectionQuery(() => this.connectionService.getByWabaId(waba_id));
+	}
+
+	async disconnect(id: number): Promise<ResponseModel<null>> {
+		const response = new ResponseModel<null>();
+
+		try {
+			const connection = await this.connectionService.getById(id);
+			if (!connection) {
+				response.success = false;
+				response.message = 'Conexão não encontrada.';
+				return response;
+			}
+
+			await this.connectionService.delete(id);
+
+			response.success = true;
+			response.message = 'Conexão desconectada e removida com sucesso.';
+			response.data = null;
+		} catch (error: any) {
+			console.log('Erro interno ao desconectar:', error);
+			response.success = false;
+			response.message = 'Ocorreu um erro interno ao processar a desconexão.';
+		}
+
+		return response;
 	}
 }

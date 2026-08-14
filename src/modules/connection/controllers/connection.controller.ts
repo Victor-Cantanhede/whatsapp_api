@@ -1,6 +1,4 @@
-import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
-import type { Response } from 'express';
-import { join } from 'path';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ConnectionUseCase } from '../application/connection.use-case';
 import { ConnectionCreateDto } from '../dtos/ConnectionCreateDto';
 import { ConnectionOauthCallbackDto } from '../dtos/ConnectionOauthCallbackDto';
@@ -9,7 +7,7 @@ import { ResponseModel } from 'src/shared/models/ResponseModel';
 
 @Controller('connection')
 export class ConnectionController {
-	constructor(private readonly connectionUseCase: ConnectionUseCase) {}
+	constructor(private readonly connectionUseCase: ConnectionUseCase) { }
 
 	@Get('facebook-config')
 	getFacebookConfig() {
@@ -58,5 +56,10 @@ export class ConnectionController {
 	@Get('getByWabaId')
 	async getByWabaId(@Query('waba_id') waba_id: string) {
 		return this.connectionUseCase.getByWabaId(waba_id);
+	}
+
+	@Delete(':id/disconnect')
+	async disconnect(@Param('id') id: string): Promise<ResponseModel<null>> {
+		return this.connectionUseCase.disconnect(Number(id));
 	}
 }

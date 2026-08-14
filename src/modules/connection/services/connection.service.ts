@@ -62,4 +62,8 @@ export class ConnectionService {
 
 		return new ConnectionResponseDto(connection);
 	}
+
+	async delete(id: number): Promise<void> {
+		await this.db.connections.delete({ where: { id } });
+	}
 }
