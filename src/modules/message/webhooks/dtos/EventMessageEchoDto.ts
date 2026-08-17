@@ -11,15 +11,22 @@ export class EventMessageEchoDto {
 				};
 				contacts: Array<{
 					wa_id: string;
-					user_id: string;
+					user_id?: string;
+					profile?: {
+						name?: string;
+					};
 				}>;
 				message_echoes: Array<{
 					from: string;
 					to: string;
 					id: string;
-					to_user_id: string;
+					to_user_id?: string;
 					timestamp: string;
 					type: 'text' | 'audio' | 'video' | 'image' | 'document' | string;
+					context?: {
+						from: string;
+						id: string;
+					};
 					text?: {
 						body: string;
 					};
@@ -27,27 +34,27 @@ export class EventMessageEchoDto {
 						mime_type: string;
 						sha256: string;
 						id: string;
-						url: string;
+						url?: string;
 						voice?: boolean;
 					};
 					video?: {
 						mime_type: string;
 						sha256: string;
 						id: string;
-						url: string;
+						url?: string;
 					};
 					image?: {
 						mime_type: string;
 						sha256: string;
 						id: string;
-						url: string;
+						url?: string;
 					};
 					document?: {
-						filename: string;
+						filename?: string;
 						mime_type: string;
 						sha256: string;
 						id: string;
-						url: string;
+						url?: string;
 					};
 				}>;
 			};

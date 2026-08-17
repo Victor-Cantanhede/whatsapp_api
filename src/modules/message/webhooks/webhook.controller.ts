@@ -23,7 +23,7 @@ export class WebhookController {
 	private readonly wpp_verify_token = process.env.APP_META_WEBHOOK_VERIFY_TOKEN;
 	private readonly wpp_app_secret = process.env.TOKEN_APP_META;
 
-	constructor(@Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy) {}
+	constructor(@Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy) { }
 
 	// Método utilizado para a meta verificar se o webhook está disponível para receber requisições
 	// A meta obriga o sistema disponibilizar um GET antes de enviar requisições para o POST
@@ -103,24 +103,30 @@ export class WebhookController {
 
 			for (const change of changes) {
 				const tipoDoEvento = change.field;
+				const dados = change.value;
 
 				// O campo "messages" é especial, pois ele agrupa tanto mensagens quanto atualizações de status
 				if (tipoDoEvento === 'messages') {
-					const dados = change.value;
-
-					// Se tiver a chave "statuses", sabemos que é uma notificação de status (ex: failed, delivered)
 					if (dados?.statuses) {
 						eventosEncontrados.push(WebhookEvents.STATUS_UPDATED);
 					}
 
-					// Se tiver "messages" ou "smb_message_echoes", sabemos que é uma mensagem normal chegando
-					if (dados?.messages || dados?.smb_message_echoes) {
+					if (dados?.messages) {
 						eventosEncontrados.push(WebhookEvents.MESSAGE_RECEIVED);
 					}
+					continue;
+				}
+
+				// O campo "smb_message_echoes" são as mensagens enviadas diretamente do aparelho físico
+				if (tipoDoEvento === 'smb_message_echoes') {
+					if (dados?.message_echoes) {
+						eventosEncontrados.push(WebhookEvents.MESSAGE_RECEIVED);
+					}
+					continue;
 				}
 
 				// Para todos os outros eventos (ex: 'security', 'account_alerts') que a Meta possa inventar
-				else if (tipoDoEvento) {
+				if (tipoDoEvento) {
 					console.log(`[Webhook] Evento não mapeado na API: ${tipoDoEvento}`);
 				}
 			}
