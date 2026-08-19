@@ -44,6 +44,13 @@ export class WebhookController {
 		this.validateSignature(signature, req.rawBody);
 		console.log('WEBHOOK SIGNATURE VERIFIED!');
 
+		// Valida se o pacote atual deve ser processado, de acordo com a restrição de número (se configurado)
+		if (!this.validarNumerosPermitidos(data)) {
+			console.log('[Webhook] Pacote descartado: Número de remetente não autorizado pelas variáveis de ambiente.');
+
+			return { success: true };
+		}
+
 		try {
 			// 1. Descobrimos quais eventos a Meta enviou neste pacote (webhook)
 			const eventosParaProcessar = this.extrairEventosDoPayload(data);
@@ -140,5 +147,55 @@ export class WebhookController {
 		// Removemos eventos repetidos para não disparar pro RabbitMQ duas vezes à toa
 		// Ex: Se chegar dois status, basta retornar ['meta_webhook_status']
 		return [...new Set(eventosEncontrados)];
+	}
+
+	/**
+	 * Verifica se o payload contém apenas mensagens de números permitidos.
+	 * Caso a variável ALLOWED_NUMBERS esteja configurada (ex: "5541996300218,5511999999999"),
+	 * bloqueará o webhook (retornando false) se alguma mensagem for de um número não listado.
+	 * Eventos que não são de recebimento de mensagem (como status) não são bloqueados.
+	 */
+	private validarNumerosPermitidos(data: any): boolean {
+		if (process.env.NODE_ENV !== 'development') {
+			return true; // Validação de número ocorre apenas no ambiente de desenvolvimento
+		}
+
+		const allowedNumbersEnv = process.env.ALLOWED_NUMBERS;
+
+		if (!allowedNumbersEnv) {
+			return true; // Sem restrição
+		}
+
+		const allowedList = allowedNumbersEnv.split(',').map(n => n.trim());
+		const entries = data?.entry || [];
+
+		for (const entry of entries) {
+			const changes = entry.changes || [];
+
+			for (const change of changes) {
+				const tipoDoEvento = change.field;
+				const dados = change.value;
+
+				// Mensagens normais recebidas
+				if (tipoDoEvento === 'messages' && dados?.messages) {
+					for (const msg of dados.messages) {
+						if (msg.from && !allowedList.includes(msg.from)) {
+							return false; // Bloqueia o pacote inteiro
+						}
+					}
+				}
+
+				// Mensagens echo (enviadas pelo aparelho físico)
+				if (tipoDoEvento === 'smb_message_echoes' && dados?.message_echoes) {
+					for (const msg of dados.message_echoes) {
+						if (msg.from && !allowedList.includes(msg.from)) {
+							return false; // Bloqueia o pacote inteiro
+						}
+					}
+				}
+			}
+		}
+
+		return true; // Permite o pacote, pois não há números bloqueados
 	}
 }
