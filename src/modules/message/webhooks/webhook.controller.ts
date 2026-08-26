@@ -132,6 +132,12 @@ export class WebhookController {
 					continue;
 				}
 
+				// O campo "account_update" indica alterações na conta/WABA (ex: desconexão/PARTNER_REMOVED)
+				if (tipoDoEvento === 'account_update') {
+					eventosEncontrados.push(WebhookEvents.ACCOUNT_UPDATE);
+					continue;
+				}
+
 				// Para todos os outros eventos (ex: 'security', 'account_alerts') que a Meta possa inventar
 				if (tipoDoEvento) {
 					console.log(`[Webhook] Evento não mapeado na API: ${tipoDoEvento}`);

@@ -95,6 +95,7 @@ curl -X POST https://sua-api.com/connection/create \
 
 ### `DELETE /connection/:id/disconnect`
 - **Descrição Didática:** Efetua a desconexão lógica (Hard Delete) do número na nossa base de dados local. Devido às restrições da Meta para contas modelo SMB (Embedded Signup), a API não possui permissão para forçar o `deregister` remoto. Portanto, o encerramento total do ciclo de vida requer que o usuário também revogue o acesso manualmente pelo painel do Meta Business Suite / WhatsApp Manager.
+- **Desconexão Iniciada na Meta:** Caso o usuário revogue ou desconecte a integração diretamente pelo aplicativo do WhatsApp Business ou Meta Business Suite, a Meta emitirá o webhook de `account_update` (`PARTNER_REMOVED`), e a API automaticamente consumirá o evento e removerá o registro da conexão correspondente da base de dados.
 - **Parâmetros de Rota (Path):**
   - `:id` (numérico): O `connectionId` da conta a ser desconectada.
 
@@ -267,12 +268,14 @@ A grande vantagem de usar esta API é que ela atua como um **Proxy de Webhooks**
 ### Como a sua aplicação recebe esses eventos?
 Em produção, a API estará configurada para disparar um `POST` diretamente para a URL da sua aplicação sempre que um evento de interesse ocorrer.
 
-Os dois eventos principais que você receberá são:
+Os eventos principais que você receberá são:
 1. **Mensagem Recebida (`message_received`)**: Quando um cliente te envia um texto, áudio, imagem, etc.
 2. **Atualização de Status (`status_updated`)**: Quando uma mensagem que você enviou muda de status (Ex: *sent*, *delivered*, *read*, *failed*).
+3. **Conexão Desconectada (`connection_disconnected`)**: Quando uma instância do WhatsApp é revogada/desconectada pelo usuário no Meta Business Suite / WhatsApp Manager.
 
-### Exemplo do Payload Repassado para Você
+### Exemplos de Payloads Repassados para Você
 
+#### 1. Mensagem Recebida (`message_received`)
 Quando um cliente enviar "Olá!" para o seu número, a sua aplicação receberá um `POST` no webhook cadastrado parecido com isto:
 
 ```json
@@ -289,7 +292,23 @@ Quando um cliente enviar "Olá!" para o seu número, a sua aplicação receberá
   }
 }
 ```
-*(Nota: O payload exato pode variar conforme as regras do RabbitMQ/Consumer interno, mas o padrão é sempre identificar qual `connectionId` originou o evento).*
+
+#### 2. Desconexão de Conta (`connection_disconnected`)
+Quando o usuário desconectar o número pelo aplicativo da Meta, a sua aplicação receberá:
+
+```json
+{
+  "event": "connection_disconnected",
+  "connectionId": 1,
+  "connectionName": "Minha Empresa",
+  "phoneNumberId": "119XXXXXX",
+  "wabaId": "109XXXXXX",
+  "timestamp": 1787711901,
+  "reason": "ACCOUNT_DISCONNECTED",
+  "initiatedBy": "USER"
+}
+```
+*(Nota: O payload é assinado no header `x-webhook-signature` com HMAC-SHA256 usando o seu `CLIENT_WEBHOOK_SECRET`).*
 
 ### Como testar no seu ambiente de Desenvolvimento?
 A Meta só permite o cadastro de **uma única URL de Webhook** por App. Para que você consiga receber os eventos na sua máquina local (localhost) sem atrapalhar a produção, esta API possui um recurso de **Multi-Tenancy de Webhooks para Desenvolvimento**.
