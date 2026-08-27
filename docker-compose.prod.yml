@@ -4,29 +4,21 @@
 # O `up` aplica as migrations pelo serviço `migrate` antes de iniciar a API.
 # Atenção: `restart api` NÃO reaplica migrations — para isso rode o `up -d` novamente.
 
-# Nome do projeto fixo: isola rede e volumes da stack de desenvolvimento, que roda
-# no mesmo diretório e por padrão usaria o mesmo namespace (derivado do nome da pasta)
 name: whatsapp-api-prod
 
 services:
     postgres:
         image: postgres:16
-
         container_name: whatsapp-api-db-prod
-
         restart: always
-
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
             POSTGRES_DB: whatsapp_api
-
         ports:
             - '5434:5432'
-
         volumes:
             - postgres_data:/var/lib/postgresql/data
-
         healthcheck:
             test: ['CMD-SHELL', 'pg_isready -U postgres -d whatsapp_api']
             interval: 10s
@@ -39,7 +31,6 @@ services:
         environment:
             RABBITMQ_DEFAULT_USER: whatsapp
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-        # Somente o painel de gestão, acessível apenas pelo próprio host
         ports:
             - '127.0.0.1:15673:15672'
         volumes:
@@ -51,7 +42,6 @@ services:
         container_name: whatsapp-ffmpeg-api-prod
         restart: always
 
-    # Aplica as migrations do Prisma e encerra; a API só sobe depois disso
     migrate:
         build:
             context: .
@@ -59,12 +49,9 @@ services:
         image: whatsapp-api-prod
         container_name: whatsapp-api-migrate-prod
         restart: 'no'
-
         command: npx prisma migrate deploy
-
         environment:
             DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/whatsapp_api?schema=public
-
         depends_on:
             postgres:
                 condition: service_healthy
@@ -76,22 +63,27 @@ services:
         image: whatsapp-api-prod
         container_name: whatsapp-api-prod
         restart: always
-
-        # Credenciais da Meta e configurações do webhook do cliente
         env_file:
             - .env.prod
-
-        # Sobrescreve o que o .env.prod aponta para localhost
         environment:
             NODE_ENV: production
             PORT: 5003
             DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/whatsapp_api?schema=public
             RABBITMQ_URL: amqp://whatsapp:${RABBITMQ_PASSWORD}@rabbitmq:5672
             FFMPEG_API_URL: http://ffmpeg-api:5004/convert
-
-        ports:
-            - '5003:5003'
-
+        networks:
+            - default
+            - traefik_public
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=traefik_public"
+            - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-whatsapp_api}.rule=Host(`${WHATSAPP_API_DOMAIN}`)"
+            - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-whatsapp_api}.entrypoints=websecure"
+            - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-whatsapp_api}.tls=true"
+            - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-whatsapp_api}.tls.certresolver=letsencrypt"
+            - "traefik.http.services.${TRAEFIK_ROUTER_NAME:-whatsapp_api}.loadbalancer.server.port=${PORT:-5003}"
+            - "traefik.http.routers.${TRAEFIK_ROUTER_NAME:-whatsapp_api}.middlewares=whatsapp-buffering"
+            - "traefik.http.middlewares.whatsapp-buffering.buffering.maxRequestBodyBytes=104857600"
         depends_on:
             migrate:
                 condition: service_completed_successfully
@@ -101,6 +93,12 @@ services:
                 condition: service_started
             ffmpeg-api:
                 condition: service_started
+
+networks:
+    default:
+        name: whatsapp_api_internal
+    traefik_public:
+        external: true
 
 volumes:
     postgres_data:
