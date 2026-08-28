@@ -14,6 +14,16 @@ async function bootstrap() {
 			.setTitle('WhatsApp API - Abstraction')
 			.setDescription('API documentation')
 			.setVersion('1.0')
+			.addBearerAuth(
+				{
+					type: 'http',
+					scheme: 'bearer',
+					name: 'Authorization',
+					description: 'Informe a API_KEY interna',
+					in: 'header',
+				},
+				'Authorization',
+			)
 			.build();
 
 		const theme = new SwaggerTheme();

@@ -4,11 +4,13 @@ import { ConnectionCreateDto } from '../dtos/ConnectionCreateDto';
 import { ConnectionOauthCallbackDto } from '../dtos/ConnectionOauthCallbackDto';
 import { ConnectionResponseDto } from '../dtos/ConnectionResponseDto';
 import { ResponseModel } from 'src/shared/models/ResponseModel';
+import { Public } from 'src/shared/decorators/public.decorator';
 
 @Controller('connection')
 export class ConnectionController {
 	constructor(private readonly connectionUseCase: ConnectionUseCase) { }
 
+	@Public()
 	@Get('facebook-config')
 	getFacebookConfig() {
 		return {

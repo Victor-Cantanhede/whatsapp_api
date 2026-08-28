@@ -17,7 +17,9 @@ import { ApiBody } from '@nestjs/swagger';
 import * as crypto from 'crypto';
 import { Request } from 'express';
 import { WebhookEvents } from './constants/webhook.constants';
+import { Public } from 'src/shared/decorators/public.decorator';
 
+@Public()
 @Controller('message/webhook')
 export class WebhookController {
 	private readonly wpp_verify_token = process.env.APP_META_WEBHOOK_VERIFY_TOKEN;

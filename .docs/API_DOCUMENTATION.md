@@ -6,19 +6,58 @@ Esta API funciona como um *middleware/gateway* para facilitar a integração com
 ---
 
 ## 🔒 Autenticação
-Para consumir qualquer rota desta API (exceto endpoints de callback da Meta), você deve passar o token de autorização interno desta API via cabeçalho.
+
+Para consumir qualquer rota protegida desta API, os clientes consumidores devem enviar a **`API_KEY`** interna configurada no servidor através do cabeçalho HTTP `Authorization`.
 
 **Header Obrigatório:**
 ```http
-Authorization: Bearer <SEU_TOKEN_INTERNO_DA_API>
+Authorization: Bearer <SUA_API_KEY_INTERNA>
 ```
+*(Nota: A API também aceita o envio da chave diretamente sem o prefixo Bearer: `Authorization: <SUA_API_KEY_INTERNA>`).*
 
-*(Nota: Você **não** enviará tokens do Facebook nas requisições do dia a dia, apenas utilizará o `connectionId` após criar a conexão).*
+### 🛡️ Política de Segurança (Secure by Default)
+- **Todas as rotas são protegidas por padrão** por meio de um `ApiKeyGuard` global com comparação segura em tempo constante (`crypto.timingSafeEqual`).
+- Caso o cabeçalho esteja ausente ou contenha uma chave inválida, a API retornará imediatamente:
+  ```json
+  // 401 Unauthorized (Token ausente)
+  {
+    "statusCode": 401,
+    "message": "Token de autorização ausente no header Authorization.",
+    "error": "Unauthorized"
+  }
+  ```
+  ```json
+  // 401 Unauthorized (Token inválido)
+  {
+    "statusCode": 401,
+    "message": "Token de autorização inválido.",
+    "error": "Unauthorized"
+  }
+  ```
+
+### 🌐 Rotas Públicas (Isentas de API_KEY)
+Apenas os seguintes endpoints não exigem a chave interna de autorização:
+1. `GET /message/webhook`: Verificação de desafio da Meta (`hub.challenge`).
+2. `POST /message/webhook`: Recepção de eventos da Meta (validada criptograficamente via assinatura `x-hub-signature-256`).
+3. `GET /connection/facebook-config`: Consulta pública de parâmetros (`appId`, `configId`, `version`) para inicialização da SDK do Facebook no frontend.
+4. `GET /` e `GET /api/docs`: Interfaces de onboarding do Facebook e documentação interativa (Swagger / API Tester).
 
 ---
 
 ## 🔗 1. Módulo de Conexão (`/connection`)
 Estes endpoints gerenciam o cadastro de instâncias/números de WhatsApp na API.
+
+### `GET /connection/facebook-config` *(Público)*
+- **Descrição Didática:** Retorna as credenciais e parâmetros públicos do aplicativo Meta (`appId`, `configId`, `version`) necessários para inicializar a SDK do Facebook (`FB.init`) no frontend da aplicação durante o fluxo de *Embedded Signup*. Não exige header de autorização.
+- **Parâmetros / Body:** Nenhum.
+- **Exemplo de Resposta:**
+```json
+{
+  "appId": "1603368927865789",
+  "configId": "1640381240764034",
+  "version": "v25.0"
+}
+```
 
 ### `POST /connection/oauth-callback`
 - **Descrição Didática:** Processa o retorno do fluxo de *Embedded Signup* (Login com Facebook). Recebe o código de autorização do frontend e troca por tokens permanentes, registrando a conexão no banco e devolvendo o `connectionId`. Este é o método preferido em produção.
