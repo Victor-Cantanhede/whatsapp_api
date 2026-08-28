@@ -51,7 +51,7 @@ services:
         restart: 'no'
         command: npx prisma migrate deploy
         environment:
-            DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/whatsapp_api?schema=public
+            DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@whatsapp-api-db-prod:5432/whatsapp_api?schema=public
         depends_on:
             postgres:
                 condition: service_healthy
@@ -68,9 +68,9 @@ services:
         environment:
             NODE_ENV: production
             PORT: 5003
-            DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/whatsapp_api?schema=public
-            RABBITMQ_URL: amqp://whatsapp:${RABBITMQ_PASSWORD}@rabbitmq:5672
-            FFMPEG_API_URL: http://ffmpeg-api:5004/convert
+            DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@whatsapp-api-db-prod:5432/whatsapp_api?schema=public
+            RABBITMQ_URL: amqp://whatsapp:${RABBITMQ_PASSWORD}@whatsapp-api-rabbitmq-prod:5672
+            FFMPEG_API_URL: http://whatsapp-ffmpeg-api-prod:5004/convert
         networks:
             - default
             - traefik_public
