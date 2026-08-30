@@ -18,7 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "tunnel": "cloudflared tunnel --url http://localhost:5003"
+    "tunnel": "cloudflared tunnel --url http://localhost:5003",
+    "dev:web": "npm run dev --prefix web",
+    "build:web": "npm run build --prefix web"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
