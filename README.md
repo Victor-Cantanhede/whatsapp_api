@@ -10,19 +10,28 @@
 
 ---
 
-## 📚 Guia de Documentação (Onde Encontrar as Regras)
+## 📚 Guia de Documentação e Ferramentas DX
 
-Aprender a consumir esta API é um processo simples. Preparamos uma documentação técnica e um ambiente interativo prático para você.
+Aprender e testar esta API é direto e ágil. Disponibilizamos tanto a documentação técnica oficial quanto interfaces interativas modernas:
 
 1. **Documentação Técnica Oficial:**
-   - Para entender o negócio, a arquitetura, as tabelas do banco e o fluxo exato de cada endpoint, leia sempre a documentação estática gerada na pasta `.docs/`:
+   - Para entender regras de negócio, tabelas do banco, webhooks e os detalhes de cada endpoint:
    - 👉 **[Ler API_DOCUMENTATION.md](./.docs/API_DOCUMENTATION.md)**
    - 👉 **[Ler Product Requirements (PRD)](./.docs/PRD.md)**
 
-2. **Testador Interativo (Playground DX):**
-   - Nossa API possui uma interface de testes ("API Tester") inspirada no WhatsApp Web, feita especialmente para você entender o funcionamento na prática sem precisar configurar o Postman.
-   - **Como acessar:** Basta subir a aplicação (veja os passos abaixo) e acessar no seu navegador: `http://localhost:5003/api/docs`
-   - *(Atenção: essa rota interativa só fica disponível quando `NODE_ENV=development`)*.
+2. **🚀 Interface Web OpenAPI Dedicada (Playground Next.js):**
+   - Console visual rica construída em Next.js para testes completos, gerador de snippets (`cURL`, `JS`, `Axios`, `Python`), simulação de chat WhatsApp, onboarding integrado com Facebook Embedded Signup e documentação de Webhooks.
+   - **Como acessar:** `http://localhost:3003` (via Docker ou `npm run dev:web`).
+   - 👉 **[Ler Documentação do Frontend Web](./web/README.md)**
+
+3. **📖 Swagger UI OpenAPI:**
+   - Especificação interativa OpenAPI v3 com tema Dracula e suporte a Bearer token.
+   - **Como acessar:** `http://localhost:5003/api/swagger` *(disponível em `NODE_ENV=development`)*.
+
+4. **🧪 API Tester & Onboarding Legado:**
+   - Interface HTML estática e onboarding direto:
+   - `http://localhost:5003/api/docs` (Tester HTML standalone)
+   - `http://localhost:5003/` (Login SDK Facebook standalone)
 
 ---
 
@@ -30,17 +39,16 @@ Aprender a consumir esta API é um processo simples. Preparamos uma documentaç�
 
 Antes de começar, certifique-se de que sua máquina possui as seguintes ferramentas:
 
-- **Node.js** (v20+ recomendado, compatível com a stack do NestJS 11)
-- **Gerenciador de pacotes** (npm, ou opcionalmente yarn/pnpm)
-- **Docker e Docker Compose** (necessários para subir os serviços locais do Banco de Dados PostgreSQL, RabbitMQ e FFMPEG-API).
+- **Node.js** (v20+ recomendado, compatível com NestJS 11 e Next.js 15)
+- **Gerenciador de pacotes** (npm, pnpm ou yarn)
+- **Docker e Docker Compose** (para PostgreSQL, RabbitMQ, FFMPEG-API e opcionalmente o container da interface Web).
 
 ---
 
 ## ⚙️ Configuração de Ambiente (.env)
 
-O sistema exige a presença de um arquivo `.env` configurado. Existe um arquivo modelo `.env.dev` que você pode usar de base para começar no ambiente local.
+O sistema exige a presença de um arquivo `.env` configurado na raiz do projeto. Existe um arquivo modelo `.env.dev` que você pode usar de base:
 
-Copie o modelo usando o comando:
 ```bash
 cp .env.dev .env
 ```
@@ -50,54 +58,65 @@ Abaixo está o dicionário das variáveis principais:
 | Variável | Obrigatório | Padrão (Local) | Descrição |
 |----------|-------------|----------------|-----------|
 | `NODE_ENV` | Sim | `development` | Define o ambiente (`development` ou `production`). |
-| `PORT` | Não | `5003` | Porta de execução da API Nest. |
+| `PORT` | Não | `5003` | Porta de execução da API NestJS. |
+| `API_KEY` | Não | - | Chave interna de autorização para consumo das rotas protegidas. |
 | `DATABASE_URL` | Sim | *Ver .env.dev* | String de conexão com o PostgreSQL (ex: localhost:5434). |
-| `RABBITMQ_URL` | Sim | *Ver .env.dev* | String de conexão com o RabbitMQ (ex: localhost:5673). |
+| `RABBITMQ_URL` | Sim | *Ver .env.dev* | String de conexão com o RabbitMQ (ex: localhost:5675). |
 | `CLOUD_API_VERSION` | Sim | `v25.0` | Versão da Cloud API da Meta a ser consultada. |
 | `TOKEN_APP_META` | Sim | - | App Secret/Token de acesso raiz do aplicativo na Meta. |
 | `META_APP_ID` | Sim | - | ID do Aplicativo registrado no painel da Meta. |
 | `META_CONFIGURATION_ID` | Sim | - | ID da Configuração do fluxo Embedded Signup do Facebook. |
-| `APP_META_WEBHOOK_VERIFY_TOKEN`| Sim | - | Segredo de validação para configurar o Webhook lá no painel da Meta. |
+| `APP_META_WEBHOOK_VERIFY_TOKEN`| Sim | - | Segredo de validação para configurar o Webhook no painel da Meta. |
 | `CLIENT_WEBHOOK_URL` | Sim | - | URL da sua aplicação (client) que receberá o webhook das mensagens. |
 | `CLIENT_WEBHOOK_SECRET` | Sim | - | Segredo usado para assinar o webhook e garantir segurança ao cliente. |
-| `FFMPEG_API_URL` | Sim | *Ver .env.dev* | URL do microserviço Docker FFMPEG para conversão de aúdios. |
+| `FFMPEG_API_URL` | Sim | *Ver .env.dev* | URL do microserviço Docker FFMPEG para conversão de áudios. |
 
 ---
 
 ## 🚀 Rodando o Projeto Localmente
 
-Siga o passo a passo de "copiar e colar" para colocar a API de pé em menos de 5 minutos:
-
 ### 1. Inicialize a Infraestrutura (Docker)
-Antes de ligar a aplicação Node, precisamos que o banco de dados (PostgreSQL), o sistema de filas (RabbitMQ) e a API de conversão de mídia (FFMPEG) estejam rodando:
+Inicie o banco de dados (PostgreSQL), o RabbitMQ, o serviço de áudio (FFMPEG) e opcionalmente a interface Web via Docker Compose:
 ```bash
-# Subindo os containers do ambiente de desenvolvimento em segundo plano
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 ### 2. Instale as Dependências e Sincronize o Banco
-Baixe os pacotes NPM e aplique a estrutura de tabelas no banco de dados via Prisma:
+Instale as dependências da API e aplique as migrations no PostgreSQL:
 ```bash
+# Na raiz do projeto:
 npm install
 
 # Aplica as migrations criando as tabelas localmente
 npx prisma migrate dev
 ```
 
-### 3. Inicie o Servidor de Desenvolvimento
-Inicie a aplicação NestJS em modo `watch` (hot-reload):
+### 3. Inicie os Servidores de Desenvolvimento
+
+Você pode iniciar o backend NestJS e o frontend Next.js simultaneamente:
+
 ```bash
+# Iniciar a API NestJS (Porta 5003):
 npm run dev
+
+# Em outro terminal, iniciar a Interface Web Next.js (Porta 3003):
+npm run dev:web
 ```
 
-✅ O servidor iniciará. Você deverá ver logs do Nest indicando "Nest application successfully started".
-Você pode acessar a interface de testes local no navegador através da rota:  
-🔗 **[http://localhost:5003/api/docs](http://localhost:5003/api/docs)**
+✅ **Endpoints de Acesso Local:**
+- **Interface Web OpenAPI:** [http://localhost:3003](http://localhost:3003)
+- **Painel de Webhooks:** [http://localhost:3003/webhooks](http://localhost:3003/webhooks)
+- **Swagger UI:** [http://localhost:5003/api/swagger](http://localhost:5003/api/swagger)
+- **API Tester Legado:** [http://localhost:5003/api/docs](http://localhost:5003/api/docs)
 
-### 4. Rodando os Testes (Opcional)
-Se precisar garantir a integridade dos módulos através do Jest:
+### 4. Executando os Testes
+
 ```bash
-npm run test
+# Executar a suíte de testes unitários do Frontend Web (Vitest):
+cd web && npm test
+
+# Ou a partir da raiz:
+npm --prefix web test
 ```
 
 ---

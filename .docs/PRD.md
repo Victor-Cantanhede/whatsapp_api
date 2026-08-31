@@ -20,7 +20,7 @@ A principal motivação é centralizar e abstrair a complexidade da comunicaçã
 ### 3.2 O que o sistema NÃO FAZ
 - Não possui regras de negócio complexas como fluxos de atendimento, chatbots conversacionais, ou gestão de pipelines de vendas.
 - Não gerencia contatos, leads ou o histórico completo e persistente de conversas (seu papel é trafegar os dados, a persistência do negócio fica na aplicação cliente).
-- Não fornece uma interface visual (frontend) para gestão diária de mensagens.
+- Não fornece um painel visual (frontend CRM/inbox) para atendimento e operação diária de mensagens por operadores humanos (embora forneça interfaces completas de Developer Experience, documentação OpenAPI/Swagger e playground interativo para desenvolvedores).
 
 ## 4. Arquitetura de Dados
 A persistência da aplicação é estritamente focada na conexão. A entidade principal, definida no Prisma, é a `Connections`, responsável por armazenar:
