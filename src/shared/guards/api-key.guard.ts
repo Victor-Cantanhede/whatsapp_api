@@ -1,9 +1,4 @@
-import {
-	CanActivate,
-	ExecutionContext,
-	Injectable,
-	UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -18,10 +13,7 @@ export class ApiKeyGuard implements CanActivate {
 	) {}
 
 	canActivate(context: ExecutionContext): boolean {
-		const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-			context.getHandler(),
-			context.getClass(),
-		]);
+		const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()]);
 
 		if (isPublic) {
 			return true;

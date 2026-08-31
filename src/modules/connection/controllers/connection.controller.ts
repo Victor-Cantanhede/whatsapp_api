@@ -8,7 +8,7 @@ import { Public } from 'src/shared/decorators/public.decorator';
 
 @Controller('connection')
 export class ConnectionController {
-	constructor(private readonly connectionUseCase: ConnectionUseCase) { }
+	constructor(private readonly connectionUseCase: ConnectionUseCase) {}
 
 	@Public()
 	@Get('facebook-config')

@@ -24,6 +24,7 @@ export default [
 				...globals.node,
 			},
 			parserOptions: {
+				projectService: true,
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},

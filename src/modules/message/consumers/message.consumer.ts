@@ -15,7 +15,7 @@ export class MessageConsumer {
 		private readonly connectionService: ConnectionService,
 		private readonly messageService: MessageService,
 		private readonly webhookDispatcher: WebhookDispatcherService,
-	) { }
+	) {}
 
 	@EventPattern(WebhookEvents.MESSAGE_RECEIVED)
 	async handleMetaWebhookEvent(@Payload() data: EventMessageReceivedDto | EventMessageEchoDto, @Ctx() context: RmqContext) {

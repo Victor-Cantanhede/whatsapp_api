@@ -14,5 +14,3 @@ import { WebhookClientDevModule } from '../webhook-client-dev/webhook-client-dev
 	exports: [ConnectionService],
 })
 export class ConnectionModule {}
-
-

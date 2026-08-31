@@ -3,4 +3,3 @@ export enum WebhookEvents {
 	STATUS_UPDATED = 'meta_webhook_status',
 	ACCOUNT_UPDATE = 'meta_webhook_account_update',
 }
-

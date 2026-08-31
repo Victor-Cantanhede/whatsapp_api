@@ -64,9 +64,10 @@ export async function executeApiRequest(
   const headers: Record<string, string> = {};
 
   if (apiKey && apiKey.trim()) {
-    headers['Authorization'] = apiKey.startsWith('Bearer ')
-      ? apiKey
-      : `Bearer ${apiKey.trim()}`;
+    const trimmedKey = apiKey.trim();
+    headers['Authorization'] = trimmedKey.startsWith('Bearer ')
+      ? trimmedKey
+      : `Bearer ${trimmedKey}`;
   }
 
   const fetchOptions: RequestInit = {

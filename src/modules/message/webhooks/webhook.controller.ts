@@ -25,7 +25,7 @@ export class WebhookController {
 	private readonly wpp_verify_token = process.env.APP_META_WEBHOOK_VERIFY_TOKEN;
 	private readonly wpp_app_secret = process.env.TOKEN_APP_META;
 
-	constructor(@Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy) { }
+	constructor(@Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy) {}
 
 	// Método utilizado para a meta verificar se o webhook está disponível para receber requisições
 	// A meta obriga o sistema disponibilizar um GET antes de enviar requisições para o POST
@@ -174,7 +174,7 @@ export class WebhookController {
 			return true; // Sem restrição
 		}
 
-		const allowedList = allowedNumbersEnv.split(',').map(n => n.trim());
+		const allowedList = allowedNumbersEnv.split(',').map((n) => n.trim());
 		const entries = data?.entry || [];
 
 		for (const entry of entries) {

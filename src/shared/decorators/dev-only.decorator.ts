@@ -7,5 +7,5 @@ import { DevOnlyGuard } from '../guards/dev-only.guard';
  * Caso contrário, retorna 404 (Not Found).
  */
 export function DevOnly() {
-  return applyDecorators(UseGuards(DevOnlyGuard));
+	return applyDecorators(UseGuards(DevOnlyGuard));
 }

@@ -17,4 +17,3 @@ import { WebhookClientDevModule } from '../modules/webhook-client-dev/webhook-cl
 	exports: [WebhookDispatcherService],
 })
 export class SharedModule {}
-

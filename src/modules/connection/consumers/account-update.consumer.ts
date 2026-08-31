@@ -11,7 +11,7 @@ export class AccountUpdateConsumer {
 	constructor(
 		private readonly connectionService: ConnectionService,
 		private readonly webhookDispatcher: WebhookDispatcherService,
-	) { }
+	) {}
 
 	@EventPattern(WebhookEvents.ACCOUNT_UPDATE)
 	async handleAccountUpdateEvent(@Payload() data: EventAccountUpdateDto, @Ctx() context: RmqContext) {
@@ -37,7 +37,9 @@ export class AccountUpdateConsumer {
 					const isDisconnection = eventType === 'PARTNER_REMOVED' || reason === 'ACCOUNT_DISCONNECTED';
 
 					if (!isDisconnection) {
-						console.log(`[AccountUpdateConsumer] Evento account_update não reconhecido como desconexão (${eventType || 'desconhecido'}). Ignorando.`);
+						console.log(
+							`[AccountUpdateConsumer] Evento account_update não reconhecido como desconexão (${eventType || 'desconhecido'}). Ignorando.`,
+						);
 						continue;
 					}
 
@@ -49,7 +51,9 @@ export class AccountUpdateConsumer {
 
 					const connection = await this.connectionService.getByWabaId(wabaId);
 					if (!connection) {
-						console.warn(`[AccountUpdateConsumer] Nenhuma conexão encontrada para o waba_id: ${wabaId}. Registro pode já ter sido removido.`);
+						console.warn(
+							`[AccountUpdateConsumer] Nenhuma conexão encontrada para o waba_id: ${wabaId}. Registro pode já ter sido removido.`,
+						);
 						continue;
 					}
 
@@ -64,7 +68,9 @@ export class AccountUpdateConsumer {
 						initiatedBy: change.value?.disconnection_info?.initiated_by,
 					};
 
-					console.log(`[AccountUpdateConsumer] Removendo conexão ID: ${connection.id}, Nome: "${connection.connection_name}", WABA ID: ${wabaId}...`);
+					console.log(
+						`[AccountUpdateConsumer] Removendo conexão ID: ${connection.id}, Nome: "${connection.connection_name}", WABA ID: ${wabaId}...`,
+					);
 
 					await this.connectionService.delete(connection.id);
 
@@ -77,7 +83,6 @@ export class AccountUpdateConsumer {
 			channel.ack(originalMsg);
 
 			console.log('[AccountUpdateConsumer] Evento processado e confirmado (ACK) com sucesso.\n');
-
 		} catch (error) {
 			console.error('[AccountUpdateConsumer] Erro ao processar evento de conta:', error.message);
 
