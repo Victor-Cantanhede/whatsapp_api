@@ -1,4 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class MessageSendTextDto {
 	@ApiProperty()
@@ -33,14 +34,52 @@ export class MessageSendMediaDto extends MessageSendDto {
 }
 
 export class MessageSendTemplateDto {
-	@ApiProperty({ description: 'ID da conexão no banco de dados' })
+	@ApiProperty({ description: 'ID da conexão no banco de dados', example: 1 })
+	@IsNumber()
 	connectionId: number;
 
-	@ApiProperty({ description: 'Número de destino' })
+	@ApiProperty({ description: 'Número do destinatário com DDI (Ex: 5511999999999)', example: '5511999999999' })
+	@IsString()
+	@IsNotEmpty()
 	to: string;
 
-	@ApiProperty({ description: 'ID do template a ser enviado' })
-	templateId: string;
+	@ApiProperty({
+		required: false,
+		description: 'Nome exato do template aprovado na Meta',
+		example: 'codigo_verificacao',
+	})
+	@IsOptional()
+	@IsString()
+	templateName?: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Nome ou ID do template a ser enviado (compatibilidade retroativa)',
+		example: 'codigo_verificacao',
+	})
+	@IsOptional()
+	@IsString()
+	templateId?: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Código do idioma do template',
+		default: 'pt_BR',
+		example: 'pt_BR',
+	})
+	@IsOptional()
+	@IsString()
+	language?: string;
+
+	@ApiProperty({
+		required: false,
+		type: [String],
+		description: 'Valores das variáveis do corpo do template em ordem (ex: {{1}}, {{2}})',
+		example: ['João', '123456'],
+	})
+	@IsOptional()
+	@IsArray()
+	variables?: (string | number)[];
 }
 
 export class MessageSendMediaResponseDto {

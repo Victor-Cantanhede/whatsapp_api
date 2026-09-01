@@ -1,4 +1,4 @@
-import { Response } from 'express';
+﻿import { Response } from 'express';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DbService } from 'src/infrastructure/database/prisma/prisma.service';
 import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType, MessageSendTemplateDto } from '../dtos/MessageSendDto';
@@ -53,12 +53,38 @@ export class MessageService {
 			throw new NotFoundException(`Connection with ID ${connectionId} not found`);
 		}
 
-		// Busca o template diretamente da Meta para recuperar o nome antes de enviar
-		const templateData = await this.apiClient.get<any>(`/${dto.templateId}`, connection.user_token);
-
-		if (!templateData || !templateData.name) {
-			throw new NotFoundException(`Template with ID ${dto.templateId} not found in Meta API`);
+		const templateIdentifier = dto.templateName || dto.templateId;
+		if (!templateIdentifier) {
+			throw new BadRequestException('O campo templateName ou templateId é obrigatório para envio de template');
 		}
+
+		// Se o identificador for numérico (ID de template da Meta), consulta a Meta para resolver o nome
+		let resolvedTemplateName = templateIdentifier;
+		const isNumericId = /^\d+$/.test(templateIdentifier);
+
+		if (isNumericId) {
+			const templateData = await this.apiClient.get<any>(`/${templateIdentifier}`, connection.user_token);
+
+			if (!templateData || !templateData.name) {
+				throw new NotFoundException(`Template with ID ${templateIdentifier} not found in Meta API`);
+			}
+
+			resolvedTemplateName = templateData.name;
+		}
+
+		// Monta os componentes com variáveis para o corpo se fornecidos
+		const hasVariables = Array.isArray(dto.variables) && dto.variables.length > 0;
+		const components = hasVariables
+			? [
+					{
+						type: 'body',
+						parameters: dto.variables!.map((val) => ({
+							type: 'text',
+							text: String(val),
+						})),
+					},
+				]
+			: undefined;
 
 		const payload = {
 			messaging_product: 'whatsapp',
@@ -66,10 +92,11 @@ export class MessageService {
 			to: dto.to,
 			type: 'template',
 			template: {
-				name: templateData.name,
+				name: resolvedTemplateName,
 				language: {
-					code: 'pt_BR',
+					code: dto.language || 'pt_BR',
 				},
+				...(components ? { components } : {}),
 			},
 		};
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { DbService } from 'src/infrastructure/database/prisma/prisma.service';
 import { WhatsAppApiClient } from 'src/infrastructure/whatsapp-api/whatsapp-api.client';
 import { CreateTemplateDto } from '../dtos/TemplateDto';
@@ -33,11 +33,31 @@ export class TemplateService {
 			throw new NotFoundException(`Connection with ID ${connectionId} not found`);
 		}
 
+		const formattedComponents = dto.components.map((comp) => {
+			const formatted: Record<string, any> = {
+				type: comp.type,
+				text: comp.text,
+			};
+
+			if (comp.example) {
+				if (Array.isArray(comp.example)) {
+					// Converte array simples ['João', '123456'] para o formato da Meta { body_text: [['João', '123456']] }
+					formatted.example = {
+						body_text: [comp.example.map((item) => String(item))],
+					};
+				} else if (typeof comp.example === 'object') {
+					formatted.example = comp.example;
+				}
+			}
+
+			return formatted;
+		});
+
 		const payload = {
 			name: dto.name,
-			language: 'pt_BR',
+			language: dto.language || 'pt_BR',
 			category: dto.category,
-			components: dto.components,
+			components: formattedComponents,
 		};
 
 		return this.apiClient.post(connection.waba_id, connection.user_token, '/message_templates', payload);
