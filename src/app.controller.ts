@@ -7,12 +7,6 @@ import { Public } from './shared/decorators/public.decorator';
 @Public()
 @Controller()
 export class AppController {
-	@Get()
-	@DevOnly()
-	login(@Res() res: Response) {
-		return res.sendFile(join(process.cwd(), 'sdk-login-facebook.html'));
-	}
-
 	@Get('api/docs')
 	@DevOnly()
 	docs(@Res() res: Response) {

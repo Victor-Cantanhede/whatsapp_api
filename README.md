@@ -28,10 +28,10 @@ Aprender e testar esta API é direto e ágil. Disponibilizamos tanto a documenta
    - Especificação interativa OpenAPI v3 com tema Dracula e suporte a Bearer token.
    - **Como acessar:** `http://localhost:5003/api/swagger` *(disponível em `NODE_ENV=development`)*.
 
-4. **🧪 API Tester & Onboarding Legado:**
-   - Interface HTML estática e onboarding direto:
-   - `http://localhost:5003/api/docs` (Tester HTML standalone)
-   - `http://localhost:5003/` (Login SDK Facebook standalone)
+4. **🧪 API Tester Legado:**
+   - Interface HTML estática standalone para testes rápidos de endpoints:
+   - `http://localhost:5003/api/docs` *(disponível em `NODE_ENV=development`)*.
+   - *(Nota: Para onboarding interativo via Facebook SDK / Embedded Signup, utilize a [Interface Web dedicada](./web/README.md) em `http://localhost:3003`).*
 
 ---
 

@@ -41,7 +41,7 @@ Apenas os seguintes endpoints não exigem a chave interna de autorização:
 2. `POST /message/webhook`: Recepção de eventos da Meta (validada criptograficamente via assinatura `x-hub-signature-256`).
 3. `GET /connection/facebook-config`: Consulta pública de parâmetros (`appId`, `configId`, `version`) para inicialização da SDK do Facebook no frontend.
 4. `GET /api/swagger`: Especificação OpenAPI e Swagger UI interativo (disponível em `NODE_ENV=development`).
-5. `GET /` e `GET /api/docs`: Interfaces estáticas de onboarding do Facebook SDK e API Tester legado (disponíveis em `NODE_ENV=development`).
+5. `GET /api/docs`: Interface estática do API Tester legado (disponível em `NODE_ENV=development`).
 
 ---
 
@@ -65,9 +65,8 @@ Para facilitar o desenvolvimento, onboarding de contas e integração de cliente
 - **Descrição:** Interface Swagger oficial baseada na especificação OpenAPI v3, estilizada com tema Dracula e suporte a persistência de Bearer token `Authorization`.
 - **Disponibilidade:** Habilitado automaticamente quando `NODE_ENV=development`.
 
-### 3. 🧪 API Tester & Onboarding Legado (`/api/docs` e `/`)
-- **`GET /api/docs`:** Interface HTML standalone (`api-tester.html`) servida diretamente pelo NestJS.
-- **`GET /`:** Página auxiliar de onboarding com Facebook SDK (`sdk-login-facebook.html`).
+### 3. 🧪 API Tester Legado (`/api/docs`)
+- **`GET /api/docs`:** Interface HTML standalone (`api-tester.html`) servida diretamente pelo NestJS para testes rápidos de endpoints.
 - **Disponibilidade:** Restrito ao ambiente de desenvolvimento (`@DevOnly()`).
 
 ---

@@ -47,8 +47,8 @@ COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.pr
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node prisma ./prisma
 
-# Página estática servida em GET / e GET /api/docs (AppController usa process.cwd())
-COPY --chown=node:node sdk-login-facebook.html api-tester.html ./
+# Página estática servida em GET /api/docs (AppController usa process.cwd())
+COPY --chown=node:node api-tester.html ./
 
 USER node
 

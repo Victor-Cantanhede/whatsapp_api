@@ -48,7 +48,9 @@ Após a autenticação bem-sucedida, a SDK do Facebook retornará um objeto de r
 
 ## 💻 Exemplo Prático de Implementação (HTML/JavaScript)
 
-Abaixo está o exemplo completo de como estruturar o seu frontend para carregar a SDK da Meta, acionar a modal de login incorporado (_Embedded Signup_) e processar os retornos necessários (`token`, `phone_id` e `waba_id`).
+> 💡 **Implementação no Projeto:** Este repositório já inclui uma implementação completa, reativa e modular em React/Next.js com TypeScript, disponível em [`web/src/infrastructure/facebook/fb-sdk.ts`](../../../web/src/infrastructure/facebook/fb-sdk.ts) e [`web/src/presentation/components/tester/fb-signup-card.tsx`](../../../web/src/presentation/components/tester/fb-signup-card.tsx).
+
+Abaixo está o exemplo standalone em HTML/JavaScript caso deseje compreender os fundamentos brutos de como carregar a SDK da Meta, acionar a modal de login incorporado (_Embedded Signup_) e processar os retornos necessários (`token`, `phone_id` e `waba_id`).
 
 > 🛑 **Atenção:** Certifique-se de substituir os marcadores `[SEU_APP_ID]`, `[SEU_APP_SECRET]` e `[SEU_CONFIGURATION_ID]` pelos dados reais gerados no seu painel de desenvolvedor da Meta.
 
