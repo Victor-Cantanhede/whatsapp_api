@@ -43,7 +43,7 @@ async function bootstrap() {
 	app.connectMicroservice({
 		transport: Transport.RMQ,
 		options: {
-			urls: [process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672'],
+			urls: [process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5675'],
 			queue: 'meta_webhook_queue',
 			noAck: false,
 			queueOptions: {
