@@ -8,8 +8,8 @@ import {
 describe('Facebook SDK Integration (fb-sdk.ts)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    delete (window as any).FB;
-    delete (window as any).fbAsyncInit;
+    delete window.FB;
+    delete window.fbAsyncInit;
 
     // Limpa scripts injetados
     const script = document.getElementById('facebook-jssdk');
@@ -97,7 +97,7 @@ describe('Facebook SDK Integration (fb-sdk.ts)', () => {
 
     it('deve chamar FB.login com extras e acionar onSuccess ao receber auth code', () => {
       const initMock = vi.fn();
-      const loginMock = vi.fn().mockImplementation((callback, options) => {
+      const loginMock = vi.fn().mockImplementation((callback) => {
         callback({
           authResponse: {
             code: 'AUTH_CODE_META_XYZ',

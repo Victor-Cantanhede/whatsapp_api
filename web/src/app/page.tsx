@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Play, RotateCcw, Send, Sparkles, Terminal } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { Header } from '@/presentation/components/layout/header';
 import { EnvBar } from '@/presentation/components/layout/env-bar';
 import { Sidebar } from '@/presentation/components/layout/sidebar';
@@ -25,19 +25,60 @@ import { useHistoryStore } from '@/application/stores/use-history-store';
 import { EndpointDefinition, RequestHistoryItem } from '@/domain/shared/types';
 import { toast } from 'sonner';
 
+function computeInitialParams(
+  endpoint: EndpointDefinition,
+  selectedConnectionId: number | null
+) {
+  const initialPath: Record<string, string | number> = {};
+  endpoint.pathParams?.forEach((p) => {
+    if (p.name === 'connectionId' && selectedConnectionId) {
+      initialPath[p.name] = selectedConnectionId;
+    } else if (p.name === 'id' && selectedConnectionId) {
+      initialPath[p.name] = selectedConnectionId;
+    } else {
+      initialPath[p.name] = p.default ?? '';
+    }
+  });
+
+  const initialQuery: Record<string, string | number> = {};
+  endpoint.queryParams?.forEach((q) => {
+    initialQuery[q.name] = q.default ?? '';
+  });
+
+  let initialBody = endpoint.body || '';
+  if (endpoint.body) {
+    try {
+      const parsed = JSON.parse(endpoint.body);
+      if ('connectionId' in parsed && selectedConnectionId) {
+        parsed.connectionId = selectedConnectionId;
+      }
+      initialBody = JSON.stringify(parsed, null, 2);
+    } catch {
+      initialBody = endpoint.body;
+    }
+  }
+
+  return { initialPath, initialQuery, initialBody };
+}
+
 export default function ApiTesterPage() {
   const { baseUrl, apiKey, selectedConnectionId } = useEnvStore();
   const { addHistoryItem } = useHistoryStore();
 
   const [selectedEndpoint, setSelectedEndpoint] =
     React.useState<EndpointDefinition>(API_ENDPOINTS[0]);
+  const [prevEndpointId, setPrevEndpointId] = React.useState(API_ENDPOINTS[0].id);
+  const [prevConnId, setPrevConnId] = React.useState<number | null>(null);
+
   const [pathParams, setPathParams] = React.useState<
     Record<string, string | number>
-  >({});
+  >(() => computeInitialParams(API_ENDPOINTS[0], selectedConnectionId).initialPath);
   const [queryParams, setQueryParams] = React.useState<
     Record<string, string | number>
-  >({});
-  const [body, setBody] = React.useState<string>(selectedEndpoint.body || '');
+  >(() => computeInitialParams(API_ENDPOINTS[0], selectedConnectionId).initialQuery);
+  const [body, setBody] = React.useState<string>(
+    () => computeInitialParams(API_ENDPOINTS[0], selectedConnectionId).initialBody
+  );
   const [hasJsonError, setHasJsonError] = React.useState(false);
   const [formData, setFormData] = React.useState<FormData | null>(null);
   const [isFormDataValid, setIsFormDataValid] = React.useState(false);
@@ -46,44 +87,24 @@ export default function ApiTesterPage() {
   const [result, setResult] = React.useState<ExecuteRequestResult | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
 
-  // Inicializa parâmetros ao alternar endpoint
-  React.useEffect(() => {
-    const initialPath: Record<string, string | number> = {};
-    selectedEndpoint.pathParams?.forEach((p) => {
-      if (p.name === 'connectionId' && selectedConnectionId) {
-        initialPath[p.name] = selectedConnectionId;
-      } else if (p.name === 'id' && selectedConnectionId) {
-        initialPath[p.name] = selectedConnectionId;
-      } else {
-        initialPath[p.name] = p.default ?? '';
-      }
-    });
+  // Ajusta parâmetros ao alternar endpoint ou conexão durante o render
+  if (
+    selectedEndpoint.id !== prevEndpointId ||
+    selectedConnectionId !== prevConnId
+  ) {
+    setPrevEndpointId(selectedEndpoint.id);
+    setPrevConnId(selectedConnectionId);
+
+    const { initialPath, initialQuery, initialBody } = computeInitialParams(
+      selectedEndpoint,
+      selectedConnectionId
+    );
     setPathParams(initialPath);
-
-    const initialQuery: Record<string, string | number> = {};
-    selectedEndpoint.queryParams?.forEach((q) => {
-      initialQuery[q.name] = q.default ?? '';
-    });
     setQueryParams(initialQuery);
-
-    // Ajusta connectionId no body inicial se existir
-    if (selectedEndpoint.body) {
-      try {
-        const parsed = JSON.parse(selectedEndpoint.body);
-        if ('connectionId' in parsed && selectedConnectionId) {
-          parsed.connectionId = selectedConnectionId;
-        }
-        setBody(JSON.stringify(parsed, null, 2));
-      } catch {
-        setBody(selectedEndpoint.body);
-      }
-    } else {
-      setBody('');
-    }
-
+    setBody(initialBody);
     setResult(null);
     setHasJsonError(false);
-  }, [selectedEndpoint, selectedConnectionId]);
+  }
 
   const handlePathParamChange = (name: string, value: string | number) => {
     setPathParams((prev) => ({ ...prev, [name]: value }));
@@ -182,8 +203,12 @@ export default function ApiTesterPage() {
       } else {
         toast.error(`Falha na requisição: ${res.status || 'Erro de Rede'}`);
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro inesperado ao disparar requisição.');
+    } catch (err: unknown) {
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : 'Erro inesperado ao disparar requisição.';
+      toast.error(errMsg);
     } finally {
       setIsLoading(false);
     }

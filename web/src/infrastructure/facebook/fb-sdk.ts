@@ -19,7 +19,7 @@ declare global {
           };
           status?: string;
         }) => void,
-        options: Record<string, any>
+        options: Record<string, unknown>
       ) => void;
     };
     fbAsyncInit?: () => void;
@@ -27,12 +27,10 @@ declare global {
 }
 
 let isSdkLoading = false;
-let isSdkLoaded = false;
 
 export async function loadFacebookSdk(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (window.FB) {
-    isSdkLoaded = true;
     return true;
   }
 
@@ -41,7 +39,6 @@ export async function loadFacebookSdk(): Promise<boolean> {
       const checkInterval = setInterval(() => {
         if (window.FB) {
           clearInterval(checkInterval);
-          isSdkLoaded = true;
           resolve(true);
         }
       }, 100);
@@ -52,7 +49,6 @@ export async function loadFacebookSdk(): Promise<boolean> {
 
   return new Promise((resolve) => {
     window.fbAsyncInit = () => {
-      isSdkLoaded = true;
       isSdkLoading = false;
       resolve(true);
     };
@@ -65,7 +61,6 @@ export async function loadFacebookSdk(): Promise<boolean> {
     script.crossOrigin = 'anonymous';
     script.onload = () => {
       if (window.FB) {
-        isSdkLoaded = true;
         isSdkLoading = false;
         resolve(true);
       }

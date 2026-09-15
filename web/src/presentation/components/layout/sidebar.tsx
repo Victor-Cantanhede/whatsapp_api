@@ -1,9 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Search, ShieldAlert, Sparkles, Terminal } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EndpointDefinition, HttpMethod } from '@/domain/shared/types';
 

@@ -123,6 +123,24 @@ export const API_ENDPOINTS: EndpointDefinition[] = [
     ],
   },
   {
+    id: 'conn-get-by-user-token',
+    name: 'Buscar por User Token',
+    category: '1. Autenticação & Conexão',
+    method: 'GET',
+    path: '/connection/getByUserToken',
+    description: 'Busca conexão pelo token de acesso da Meta.',
+    requiresAuth: true,
+    queryParams: [
+      {
+        name: 'user_token',
+        type: 'text',
+        required: true,
+        description: 'Token de acesso do usuário ou System User da Meta',
+        placeholder: 'Ex: EAAG...',
+      },
+    ],
+  },
+  {
     id: 'conn-get-fb-config',
     name: 'Parâmetros Meta SDK (Público)',
     category: '1. Autenticação & Conexão',
@@ -131,6 +149,7 @@ export const API_ENDPOINTS: EndpointDefinition[] = [
     description: 'Retorna credenciais públicas para inicialização do SDK do Facebook (appId, configId, version). Não exige token de autenticação.',
     requiresAuth: false,
   },
+
   {
     id: 'conn-disconnect',
     name: 'Desconectar / Excluir Conexão',
@@ -179,18 +198,21 @@ export const API_ENDPOINTS: EndpointDefinition[] = [
     category: '2. Envio de Mensagens',
     method: 'POST',
     path: '/messages/template',
-    description: 'Envia uma mensagem pré-aprovada (Template) pela Meta (ex: hello_world).',
+    description: 'Envia uma mensagem pré-aprovada (Template) pela Meta (ex: hello_world), com suporte a variáveis de interpolação e seleção de idioma.',
     requiresAuth: true,
     body: JSON.stringify(
       {
         connectionId: 1,
         to: '5511999999999',
-        templateId: 'hello_world',
+        templateName: 'codigo_verificacao',
+        language: 'pt_BR',
+        variables: ['João', '123456'],
       },
       null,
       2
     ),
   },
+
   {
     id: 'msg-media',
     name: 'Enviar Arquivo de Mídia (Upload)',
@@ -300,17 +322,19 @@ export const API_ENDPOINTS: EndpointDefinition[] = [
     category: '4. Gestão de Templates',
     method: 'POST',
     path: '/templates',
-    description: 'Cria e submete um novo template de mensagem para aprovação da Meta.',
+    description: 'Cria e submete um novo template de mensagem para aprovação da Meta. O campo language define o idioma (padrão pt_BR) e example nos componentes é obrigatório pela Meta caso o texto possua variáveis.',
     requiresAuth: true,
     body: JSON.stringify(
       {
         connectionId: 1,
         name: 'aviso_promocao_semanal',
         category: 'MARKETING',
+        language: 'pt_BR',
         components: [
           {
             type: 'BODY',
-            text: 'Olá! Temos uma super oferta exclusiva para você esta semana.',
+            text: 'Olá {{1}}! Temos uma super oferta de {{2}}% para você esta semana.',
+            example: ['Maria', '25'],
           },
         ],
       },
@@ -343,7 +367,7 @@ export const API_ENDPOINTS: EndpointDefinition[] = [
     category: '4. Gestão de Templates',
     method: 'DELETE',
     path: '/templates/{{connectionId}}',
-    description: 'Remove um template de mensagem da base da Meta.',
+    description: 'Remove um template de mensagem da base da Meta diretamente pelo nome cadastrado (ou ID numérico).',
     requiresAuth: true,
     pathParams: [
       {
@@ -360,9 +384,10 @@ export const API_ENDPOINTS: EndpointDefinition[] = [
         name: 'templateId',
         type: 'text',
         required: true,
-        description: 'Nome exato do template aprovado na Meta',
+        description: 'Nome exato do template aprovado na Meta (ex: aviso_promocao_semanal) ou ID numérico',
         placeholder: 'Ex: aviso_promocao_semanal',
       },
     ],
   },
 ];
+

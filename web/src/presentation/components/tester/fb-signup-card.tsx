@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ExternalLink, Loader2, Sparkles } from 'lucide-react';
+import { ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEnvStore } from '@/application/stores/use-env-store';
 import {
@@ -11,6 +11,19 @@ import {
 import { FacebookConfig } from '@/domain/connections/connection.types';
 import { toast } from 'sonner';
 
+declare global {
+  interface Window {
+    _tempFbCode?: string | null;
+  }
+}
+
+interface EmbeddedSignupMessage {
+  type?: string;
+  data?: {
+    waba_id?: string;
+  };
+}
+
 interface FbSignupCardProps {
   onAutoFillCode: (code: string, wabaId: string) => void;
 }
@@ -18,30 +31,35 @@ interface FbSignupCardProps {
 export function FbSignupCard({ onAutoFillCode }: FbSignupCardProps) {
   const { baseUrl } = useEnvStore();
   const [config, setConfig] = React.useState<FacebookConfig | null>(null);
-  const [isLoadingConfig, setIsLoadingConfig] = React.useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = React.useState(true);
   const [isOpeningPopup, setIsOpeningPopup] = React.useState(false);
 
   // Carrega configurações públicas da API
-  const fetchConfig = React.useCallback(async () => {
-    setIsLoadingConfig(true);
-    try {
-      const cleanBaseUrl = (baseUrl || 'http://localhost:5003').replace(/\/$/, '');
-      const res = await fetch(`${cleanBaseUrl}/connection/facebook-config`);
-      if (res.ok) {
-        const data = await res.json();
-        setConfig(data);
-        await loadFacebookSdk();
-      }
-    } catch {
-      // Backend offline or error
-    } finally {
-      setIsLoadingConfig(false);
-    }
-  }, [baseUrl]);
-
   React.useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    let isMounted = true;
+    const cleanBaseUrl = (baseUrl || 'http://localhost:5003').replace(/\/$/, '');
+
+    fetch(`${cleanBaseUrl}/connection/facebook-config`)
+      .then(async (res) => {
+        if (res.ok && isMounted) {
+          const data = (await res.json()) as FacebookConfig;
+          setConfig(data);
+          await loadFacebookSdk();
+        }
+      })
+      .catch(() => {
+        // Backend offline or error
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingConfig(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [baseUrl]);
 
   // Listener para capturar o evento de postMessage do Embedded Signup
   React.useEffect(() => {
@@ -49,14 +67,16 @@ export function FbSignupCard({ onAutoFillCode }: FbSignupCardProps) {
       if (!event.origin.endsWith('facebook.com')) return;
 
       try {
-        const payload =
-          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        const payload: EmbeddedSignupMessage | null =
+          typeof event.data === 'string'
+            ? (JSON.parse(event.data) as EmbeddedSignupMessage)
+            : (event.data as EmbeddedSignupMessage);
 
         if (payload?.type === 'WA_EMBEDDED_SIGNUP') {
           const wabaId = payload.data?.waba_id;
-          if (wabaId && (window as any)._tempFbCode) {
-            onAutoFillCode((window as any)._tempFbCode, wabaId);
-            (window as any)._tempFbCode = null;
+          if (wabaId && window._tempFbCode) {
+            onAutoFillCode(window._tempFbCode, wabaId);
+            window._tempFbCode = null;
             toast.success('Credenciais da Meta capturadas com sucesso!');
           }
         }
@@ -83,7 +103,7 @@ export function FbSignupCard({ onAutoFillCode }: FbSignupCardProps) {
       config,
       (code) => {
         setIsOpeningPopup(false);
-        (window as any)._tempFbCode = code;
+        window._tempFbCode = code;
         toast.info(
           'Código retornado pelo Facebook! Aguardando evento de WABA ID...'
         );

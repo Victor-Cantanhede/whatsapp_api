@@ -21,7 +21,7 @@ export function useCodeGenerator({
   isFormData,
 }: CodeGeneratorOptions) {
   return useMemo(() => {
-    let cleanBaseUrl = (baseUrl || 'http://localhost:5003').replace(/\/$/, '');
+    const cleanBaseUrl = (baseUrl || 'http://localhost:5003').replace(/\/$/, '');
     let resolvedPath = endpoint.path;
 
     Object.entries(pathParams).forEach(([k, v]) => {
@@ -40,7 +40,6 @@ export function useCodeGenerator({
 
     const qs = searchParams.toString();
     const fullUrl = `${cleanBaseUrl}${resolvedPath}${qs ? `?${qs}` : ''}`;
-    const tokenHeader = apiKey ? `Authorization: Bearer ${apiKey}` : '';
 
     // --- 1. cURL ---
     let curl = `curl -X ${endpoint.method} "${fullUrl}"`;

@@ -1,5 +1,7 @@
 export class WebhookPayloadMessageDto {
+	event: 'message_received';
 	connectionId: number;
+
 	phoneNumberId: string;
 	waId: string;
 	contactName?: string;

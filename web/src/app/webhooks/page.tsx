@@ -5,12 +5,7 @@ import {
   Webhook,
   Copy,
   Check,
-  ShieldCheck,
   Network,
-  Radio,
-  ExternalLink,
-  Layers,
-  ArrowRight,
 } from 'lucide-react';
 import { Header } from '@/presentation/components/layout/header';
 import { EnvBar } from '@/presentation/components/layout/env-bar';
@@ -32,31 +27,26 @@ export default function WebhooksPage() {
   const payloadMessageReceived = `{
   "event": "message_received",
   "connectionId": 1,
-  "data": {
-    "from": "5511999999999",
-    "id": "wamid.HBgLNTUxMjk5OTk5OTk5FQIAERgSMzAyQ0U2QUQ5MDY1OUQ4OTFBAA==",
-    "timestamp": "1710000000",
-    "type": "text",
-    "text": {
-      "body": "Olá! Gostaria de saber mais informações sobre o serviço."
-    }
-  }
+  "phoneNumberId": "11987654321",
+  "waId": "5511999999999",
+  "contactName": "João Silva",
+  "providerMessageId": "wamid.HBgLNTUxMjk5OTk5OTk5FQIAERgSMzAyQ0U2QUQ5MDY1OUQ4OTFBAA==",
+  "timestamp": "1710000000",
+  "type": "text",
+  "fromMe": false,
+  "text": "Olá! Gostaria de saber mais informações sobre o serviço."
 }`;
 
   const payloadStatusUpdated = `{
   "event": "status_updated",
   "connectionId": 1,
-  "data": {
-    "id": "wamid.HBgLNTUxMjk5OTk5OTk5FQIAERgSMzAyQ0U2QUQ5MDY1OUQ4OTFBAA==",
-    "status": "delivered",
-    "timestamp": "1710000005",
-    "recipient_id": "5511999999999",
-    "conversation": {
-      "id": "c0123456789",
-      "origin": { "type": "user_initiated" }
-    }
-  }
+  "phoneNumberId": "11987654321",
+  "waId": "5511999999999",
+  "providerMessageId": "wamid.HBgLNTUxMjk5OTk5OTk5FQIAERgSMzAyQ0U2QUQ5MDY1OUQ4OTFBAA==",
+  "timestamp": "1710000005",
+  "status": "delivered"
 }`;
+
 
   const payloadConnectionDisconnected = `{
   "event": "connection_disconnected",
@@ -213,13 +203,19 @@ export default function WebhooksPage() {
             <TabsContent value="status_updated" className="mt-4 space-y-3">
               <div className="p-4 rounded-xl border border-border bg-card/30 flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-semibold text-foreground">
-                    Evento: <code className="text-emerald-400">status_updated</code>
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    Emitido quando a mensagem muda de status na Meta (<code className="text-zinc-300">sent</code>, <code className="text-zinc-300">delivered</code>, <code className="text-zinc-300">read</code>, <code className="text-zinc-300">failed</code>).
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-semibold text-foreground">
+                      Evento: <code className="text-emerald-400">status_updated</code>
+                    </h3>
+                    <Badge variant="outline" className="bg-amber-950/40 text-amber-400 border-amber-800/40 text-[10px] font-mono">
+                      Em Desenvolvimento
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Notificações de mudança de status da Meta (<code className="text-zinc-300">sent</code>, <code className="text-zinc-300">delivered</code>, <code className="text-zinc-300">read</code>, <code className="text-zinc-300">failed</code>). O repasse deste evento para o webhook cliente está em fase de implementação.
                   </p>
                 </div>
+
                 <Button
                   variant="outline"
                   size="sm"

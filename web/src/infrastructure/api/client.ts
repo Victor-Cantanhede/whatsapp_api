@@ -18,7 +18,7 @@ export interface ExecuteRequestResult {
   durationMs: number;
   isOk: boolean;
   contentType: string;
-  data: any;
+  data: unknown;
   blobUrl?: string;
   blobSize?: number;
   headers: Record<string, string>;
@@ -39,7 +39,7 @@ export async function executeApiRequest(
     formData,
   } = options;
 
-  let cleanBaseUrl = (baseUrl || 'http://localhost:5003').replace(/\/$/, '');
+  const cleanBaseUrl = (baseUrl || 'http://localhost:5003').replace(/\/$/, '');
   let resolvedPath = path;
 
   // Substitui parâmetros de rota :param ou {{param}}
@@ -96,7 +96,7 @@ export async function executeApiRequest(
       resHeaders[key] = val;
     });
 
-    let data: any = null;
+    let data: unknown = null;
     let blobUrl: string | undefined;
     let blobSize: number | undefined;
     let rawResponse: string | undefined;
@@ -135,9 +135,10 @@ export async function executeApiRequest(
       headers: resHeaders,
       rawResponse,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const endTime = performance.now();
     const durationMs = Math.round(endTime - startTime);
+    const errMessage = error instanceof Error ? error.message : 'Falha de conexão com a API';
 
     return {
       url: finalUrl,
@@ -148,12 +149,12 @@ export async function executeApiRequest(
       contentType: 'text/plain',
       data: {
         error: 'Network Error',
-        message: error?.message || 'Falha de conexão com a API',
+        message: errMessage,
         details:
           'Verifique se a Base URL está correta, se o backend está ativo e se o CORS está liberado.',
       },
       headers: {},
-      rawResponse: error?.toString(),
+      rawResponse: error instanceof Error ? error.stack || error.message : String(error),
     };
   }
 }

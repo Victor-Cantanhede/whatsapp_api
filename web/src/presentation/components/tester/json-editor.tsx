@@ -27,8 +27,9 @@ export function JsonEditor({ value, onChange, onErrorChange }: JsonEditorProps) 
         setJsonError(null);
         onErrorChange?.(false);
         return true;
-      } catch (e: any) {
-        setJsonError(e?.message || 'Sintaxe JSON inválida');
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Sintaxe JSON inválida';
+        setJsonError(message);
         onErrorChange?.(true);
         return false;
       }

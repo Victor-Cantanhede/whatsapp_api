@@ -35,7 +35,7 @@ export interface EndpointDefinition {
   isFacebookSignup?: boolean;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
@@ -54,7 +54,7 @@ export interface RequestHistoryItem {
   durationMs: number;
   timestamp: number;
   requestHeaders: Record<string, string>;
-  requestBody?: any;
-  responseBody?: any;
+  requestBody?: unknown;
+  responseBody?: unknown;
   isError: boolean;
 }

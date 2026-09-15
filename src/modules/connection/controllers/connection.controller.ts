@@ -32,7 +32,7 @@ export class ConnectionController {
 
 	@Get('getAll')
 	async getAll(): Promise<ResponseModel<ConnectionResponseDto[]>> {
-		return this.connectionUseCase.gelAll();
+		return this.connectionUseCase.getAll();
 	}
 
 	@Get('getById')

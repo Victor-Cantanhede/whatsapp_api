@@ -8,7 +8,6 @@ import {
   Layers,
   Radio,
   RefreshCw,
-  Sparkles,
   Webhook,
   History as HistoryIcon,
 } from 'lucide-react';

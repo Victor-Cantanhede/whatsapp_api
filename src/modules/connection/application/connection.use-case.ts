@@ -103,7 +103,7 @@ export class ConnectionUseCase {
 		return response;
 	}
 
-	async gelAll(): Promise<ResponseModel<ConnectionResponseDto[]>> {
+	async getAll(): Promise<ResponseModel<ConnectionResponseDto[]>> {
 		const response = new ResponseModel<ConnectionResponseDto[]>();
 
 		try {

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Eye, EyeOff, KeyRound, Server, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Server } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEnvStore } from '@/application/stores/use-env-store';

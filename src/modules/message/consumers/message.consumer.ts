@@ -70,6 +70,7 @@ export class MessageConsumer {
 						const contactName = contact?.profile?.name;
 
 						const webhookPayload: WebhookPayloadMessageDto = {
+							event: 'message_received',
 							connectionId: connection.id,
 							phoneNumberId: phoneNumberId,
 							waId: waId,

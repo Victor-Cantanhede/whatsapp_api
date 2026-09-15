@@ -8,7 +8,8 @@ export class WhatsAppApiClient {
 	private readonly baseUrl: string;
 
 	constructor(private readonly httpService: HttpService) {
-		this.baseUrl = process.env.WHATSAPP_CLOUD_API_URL || 'https://graph.facebook.com/v25.0';
+		const version = process.env.CLOUD_API_VERSION || 'v25.0';
+		this.baseUrl = process.env.WHATSAPP_CLOUD_API_URL || `https://graph.facebook.com/${version}`;
 	}
 
 	private handleError(url: string, method: string, error: any): never {

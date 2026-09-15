@@ -183,10 +183,12 @@ curl -X DELETE https://sua-api.com/connection/1/disconnect \
 
 ### Endpoints de Consulta de Conexão
 Para encontrar IDs e gerenciar contas cadastradas:
-- `GET /connection/getAll`: Lista todas.
+- `GET /connection/getAll`: Lista todas as conexões cadastradas.
 - `GET /connection/getById?id=1`: Busca por ID numérico (`connectionId`).
-- `GET /connection/getByConnectionName?connection_name=EmpresaX`
-- `GET /connection/getByPhoneId?phone_id=12345`
+- `GET /connection/getByConnectionName?connection_name=EmpresaX`: Busca pelo nome da conexão.
+- `GET /connection/getByPhoneId?phone_id=12345`: Busca pelo ID do telefone na Meta.
+- `GET /connection/getByWabaId?waba_id=109876`: Busca pelo ID da conta WABA da Meta.
+- `GET /connection/getByUserToken?user_token=EAAX...`: Busca pelo token de acesso associado à conexão.
 
 *(Nota: Nenhum body é exigido, apenas Query Params e Header de Authorization).*
 
@@ -233,16 +235,21 @@ fetch("https://sua-api.com/messages/text", {
 ```
 
 ### `POST /messages/template`
-- **Descrição Didática:** Envia uma mensagem pré-aprovada (Template) pela Meta (geralmente usada para iniciar conversas fora da janela de 24h).
+- **Descrição Didática:** Envia uma mensagem pré-aprovada (Template) pela Meta (geralmente usada para iniciar conversas fora da janela de 24h). Suporta interpolação de variáveis no corpo do template e seleção de idioma.
 - **Parâmetros / Body (JSON):**
 
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `connectionId` | number | Sim | ID interno da conexão. |
-| `to` | string | Sim | Número do destinatário. |
-| `templateId` | string | Sim | Nome exato do template aprovado na Meta. |
+| `to` | string | Sim | Número do destinatário no formato internacional (Ex: 5511999999999). |
+| `templateName` | string | Condicional* | Nome exato do template aprovado na Meta (ex: "codigo_verificacao"). |
+| `templateId` | string | Condicional* | Nome do template ou ID numérico da Meta (compatibilidade retroativa). |
+| `language` | string | Não | Código do idioma do template (Default: `"pt_BR"`). |
+| `variables` | array | Não | Valores para substituir as variáveis posicionais do corpo do template (`{{1}}`, `{{2}}`), ex: `["João", "123456"]`. |
 
-- **Exemplo de Requisição (cURL):**
+*\*Obs: É obrigatório informar `templateName` ou `templateId`.*
+
+- **Exemplo de Requisição com Variáveis (cURL):**
 ```bash
 curl -X POST https://sua-api.com/messages/template \
   -H "Content-Type: application/json" \
@@ -250,12 +257,18 @@ curl -X POST https://sua-api.com/messages/template \
   -d '{
     "connectionId": 1,
     "to": "5511999999999",
-    "templateId": "hello_world"
+    "templateName": "codigo_verificacao",
+    "language": "pt_BR",
+    "variables": ["João", "481920"]
   }'
 ```
 
 ### `POST /messages/media`
 - **Descrição Didática:** Envia arquivos de mídia (imagem, áudio, documento ou vídeo). Formato Multipart/Form-Data!
+- **Conversões Automáticas & Inteligência de Mídia:**
+  - **Áudios:** Qualquer formato de áudio suportado enviado é automaticamente convertido para `.ogg` (Opus / mono / voice) via microserviço FFMPEG para garantir reprodução como áudio de voz gravado na hora (*voice note* / PTT) no WhatsApp.
+  - **Imagens WebP:** Arquivos `image/webp` são convertidos automaticamente para `image/jpeg` antes do envio à Meta.
+  - **Retorno em Base64:** Se a variável de ambiente `RETURN_MEDIA_BASE64=true` estiver ativa, a resposta da API conterá a propriedade `base64` do arquivo enviado.
 - **Parâmetros / Body (Form-Data):**
 
 | Campo | Tipo | Obrigatório | Descrição |
@@ -264,7 +277,8 @@ curl -X POST https://sua-api.com/messages/template \
 | `connectionId` | number | Sim | ID interno da conexão. |
 | `to` | string | Sim | Número do destinatário. |
 | `type` | string | Sim | Tipo de mídia (`audio`, `video`, `image`, `document`). |
-| `caption` | string | Não | Texto descritivo para enviar junto com a imagem/vídeo. |
+| `caption` | string | Não | Texto descritivo para enviar junto com imagem, documento ou vídeo (áudio não aceita legenda). |
+| `quotedMessageId`| string | Não | ID (WAMID) da mensagem que está sendo respondida. |
 
 - **Exemplo de Requisição (Javascript / FormData):**
 ```javascript
@@ -282,6 +296,7 @@ fetch("https://sua-api.com/messages/media", {
 });
 ```
 
+
 ### Endpoints de Download de Mídia
 Quando um webhook notifica que você recebeu um áudio ou imagem, o ID dessa mídia virá no payload.
 - `GET /messages/media/:connectionId/:mediaId`: Faz stream da mídia bruta.
@@ -290,18 +305,21 @@ Quando um webhook notifica que você recebeu um áudio ou imagem, o ID dessa mí
 ---
 
 ## 📑 3. Módulo de Templates (`/templates`)
-Gerencia a criação e sincronização de templates na WABA da Meta.
+Gerencia a criação, consulta e exclusão de templates na WABA da Meta.
 
 ### `POST /templates`
-- **Descrição Didática:** Cria um novo template de mensagem e submete para aprovação da Meta.
+- **Descrição Didática:** Cria um novo template de mensagem e submete para aprovação da Meta. Se o corpo contiver variáveis posicionais (`{{1}}`, `{{2}}`), o campo `example` dentro do componente é **obrigatório pela Meta**.
 - **Parâmetros / Body (JSON):**
 
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `connectionId`| number | Sim | ID da conexão vinculada ao WABA que aprovará. |
-| `name` | string | Sim | Nome da automação (sem espaços). |
+| `name` | string | Sim | Nome identificador do template (letras minúsculas, números e sublinhados). |
 | `category` | string | Sim | Apenas `MARKETING` ou `UTILITY`. |
-| `components` | array | Sim | Lista de componentes do template. (Atualmente obriga `type: 'BODY'`). |
+| `language` | string | Não | Idioma do template (Default: `"pt_BR"`). |
+| `components` | array | Sim | Lista de componentes do template (`type: 'BODY'`). |
+| `components[].text` | string | Sim | Texto do template (pode conter marcadores `{{1}}`, `{{2}}`). |
+| `components[].example` | array/obj | Condicional* | Exemplos de valores reais para as variáveis (ex: `["Maria", "30"]`). Obrigatório pela Meta quando o texto tem variáveis. |
 
 - **Exemplo de Requisição (fetch):**
 ```javascript
@@ -312,16 +330,21 @@ fetch("https://sua-api.com/templates", {
     connectionId: 1,
     name: "aviso_promocao_01",
     category: "MARKETING",
+    language: "pt_BR",
     components: [
-      { type: "BODY", text: "Temos uma promoção incrível para você hoje!" }
+      {
+        type: "BODY",
+        text: "Olá {{1}}! Temos uma promoção incrível de {{2}}% para você hoje!",
+        example: ["Maria", "20"]
+      }
     ]
   })
 });
 ```
 
-### Consultas de Templates
+### Consultas e Exclusão de Templates
 - `GET /templates/:connectionId`: Lista os templates atrelados à conta especificada.
-- `DELETE /templates/:connectionId?templateId=nome_do_template`: Exclui um template da base da Meta.
+- `DELETE /templates/:connectionId?templateId=nome_do_template`: Exclui um template da base da Meta diretamente pelo nome (ex: `?templateId=aviso_promocao_01`). A API também aceita o ID numérico da Meta por retrocompatibilidade.
 
 ---
 
@@ -329,38 +352,81 @@ fetch("https://sua-api.com/templates", {
 
 Como o WhatsApp é assíncrono, você não recebe as respostas de mensagens no momento do disparo. Em vez disso, a Meta envia requisições HTTP (Webhooks) sempre que algo acontece.
 
-A grande vantagem de usar esta API é que ela atua como um **Proxy de Webhooks**. Ou seja, a API absorve toda a complexidade de validação criptográfica da Meta, formata/filtra os dados e então **repassa o evento limpo** para o servidor da sua aplicação cliente.
+A grande vantagem de usar esta API é que ela atua como um **Proxy de Webhooks**. Ou seja, a API absorve toda a complexidade de validação criptográfica da Meta, enfileira os eventos via RabbitMQ de forma confiável e **repassa os eventos limpos e padronizados** para o servidor da sua aplicação cliente.
 
 ### Como a sua aplicação recebe esses eventos?
-Em produção, a API estará configurada para disparar um `POST` diretamente para a URL da sua aplicação sempre que um evento de interesse ocorrer.
+Em produção, a API estará configurada para disparar um `POST` diretamente para a URL cadastrada em `CLIENT_WEBHOOK_URL` sempre que um evento de interesse ocorrer. Cada payload recebido conterá a propriedade identificadora `event` no primeiro nível do JSON para facilitar o chaveamento/roteamento no cliente.
 
-Os eventos principais que você receberá são:
-1. **Mensagem Recebida (`message_received`)**: Quando um cliente te envia um texto, áudio, imagem, etc.
-2. **Atualização de Status (`status_updated`)**: Quando uma mensagem que você enviou muda de status (Ex: *sent*, *delivered*, *read*, *failed*).
-3. **Conexão Desconectada (`connection_disconnected`)**: Quando uma instância do WhatsApp é revogada/desconectada pelo usuário no Meta Business Suite / WhatsApp Manager.
+Os eventos mapeados são:
+1. **Mensagem Recebida (`message_received`)**: Quando um cliente te envia uma mensagem de texto, áudio, imagem, vídeo ou documento (ou eco de mensagem enviada do aparelho).
+2. **Conexão Desconectada (`connection_disconnected`)**: Quando uma instância do WhatsApp é revogada/desconectada pelo usuário no Meta Business Suite / WhatsApp Manager.
+3. **Atualização de Status (`status_updated`)**: *(Em Desenvolvimento)* Recebe os status de entrega da Meta (*sent*, *delivered*, *read*, *failed*). O repasse automático para o webhook cliente está em fase de homologação e será habilitado em breve.
 
 ### Exemplos de Payloads Repassados para Você
 
-#### 1. Mensagem Recebida (`message_received`)
-Quando um cliente enviar "Olá!" para o seu número, a sua aplicação receberá um `POST` no webhook cadastrado parecido com isto:
+#### 1. Mensagem de Texto Recebida (`message_received`)
+Quando um cliente enviar "Olá!" para o seu número, a sua aplicação receberá um `POST` parecido com isto:
 
 ```json
 {
   "event": "message_received",
   "connectionId": 1,
-  "data": {
+  "phoneNumberId": "11987654321",
+  "waId": "5511999999999",
+  "contactName": "João Silva",
+  "providerMessageId": "wamid.HBgLNTUxMjk5OTk5OTk5FQIAERgSMzAyQ0U2QUQ5MDY1OUQ4OTFBAA==",
+  "timestamp": "1710000000",
+  "type": "text",
+  "fromMe": false,
+  "text": "Olá! Gostaria de saber mais informações sobre o serviço."
+}
+```
+
+Caso a mensagem seja uma resposta citada (reply), o objeto `quotedMessage` estará presente:
+```json
+{
+  "event": "message_received",
+  "connectionId": 1,
+  "phoneNumberId": "11987654321",
+  "waId": "5511999999999",
+  "providerMessageId": "wamid.HBgL...",
+  "timestamp": "1710000010",
+  "type": "text",
+  "fromMe": false,
+  "text": "Sim, tenho interesse!",
+  "quotedMessage": {
     "from": "5511999999999",
-    "type": "text",
-    "text": {
-      "body": "Olá!"
-    },
-    "timestamp": "1710000000"
+    "id": "wamid.HBgL_ANTERIOR..."
   }
 }
 ```
 
-#### 2. Desconexão de Conta (`connection_disconnected`)
-Quando o usuário desconectar o número pelo aplicativo da Meta, a sua aplicação receberá:
+#### 2. Mensagem com Mídia Recebida (`image`, `audio`, `video`, `document`)
+Quando o contato envia uma mídia, o payload conterá o nó do tipo correspondente. Caso a variável `RETURN_MEDIA_BASE64=true` esteja ativa na API, o campo `base64` já virá preenchido diretamente:
+
+```json
+{
+  "event": "message_received",
+  "connectionId": 1,
+  "phoneNumberId": "11987654321",
+  "waId": "5511999999999",
+  "providerMessageId": "wamid.HBgL...",
+  "timestamp": "1710000020",
+  "type": "image",
+  "fromMe": false,
+  "image": {
+    "id": "9876543210",
+    "mime_type": "image/jpeg",
+    "sha256": "3a8f...",
+    "url": "https://lookaside.fbsbx.com/...",
+    "base64": "/9j/4AAQSkZJRgABAQ..."
+  }
+}
+```
+*(Nota: Você também pode obter a mídia a qualquer momento chamando `GET /messages/media/:connectionId/:mediaId` ou `GET /messages/media/:connectionId/:mediaId/base64`).*
+
+#### 3. Desconexão de Conta (`connection_disconnected`)
+Quando o usuário desconectar o número pelo aplicativo da Meta ou WhatsApp Manager:
 
 ```json
 {
@@ -386,3 +452,4 @@ Para receber os webhooks no seu PC:
 
 ---
 **Nota Técnica:** As rotas `GET` e `POST /message/webhook` mapeadas nesta API **não são para o seu uso direto**. Elas são as portas de entrada exclusivas declaradas no portal "Meta for Developers" para que os servidores da Meta consigam entregar os eventos.
+

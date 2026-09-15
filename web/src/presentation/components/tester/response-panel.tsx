@@ -7,8 +7,6 @@ import {
   Clock,
   Download,
   Terminal,
-  FileDown,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,7 +128,14 @@ export function ResponsePanel({ result, isLoading }: ResponsePanelProps) {
         {!result.isOk && (
           <EmpatheticError
             status={result.status}
-            message={result.data?.message || result.rawResponse}
+            message={
+              (typeof result.data === 'object' &&
+              result.data !== null &&
+              'message' in result.data &&
+              typeof (result.data as { message: unknown }).message === 'string'
+                ? (result.data as { message: string }).message
+                : undefined) || result.rawResponse
+            }
           />
         )}
 
@@ -153,6 +158,7 @@ export function ResponsePanel({ result, isLoading }: ResponsePanelProps) {
 
             {isImage && (
               <div className="flex justify-center p-2 bg-zinc-950 rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={result.blobUrl}
                   alt="WhatsApp Media Preview"

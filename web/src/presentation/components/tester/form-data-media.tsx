@@ -27,11 +27,14 @@ export function FormDataMedia({ onFormDataChange }: FormDataMediaProps) {
   const [type, setType] = React.useState<'image' | 'video' | 'audio' | 'document'>('image');
   const [caption, setCaption] = React.useState('');
 
-  React.useEffect(() => {
+  const [prevSelectedId, setPrevSelectedId] = React.useState(selectedConnectionId);
+
+  if (selectedConnectionId !== prevSelectedId) {
+    setPrevSelectedId(selectedConnectionId);
     if (selectedConnectionId) {
       setConnectionId(String(selectedConnectionId));
     }
-  }, [selectedConnectionId]);
+  }
 
   const updateFormData = React.useCallback(() => {
     if (!file || !to.trim() || !connectionId.trim() || !type) {
@@ -174,7 +177,11 @@ export function FormDataMedia({ onFormDataChange }: FormDataMediaProps) {
           </Label>
           <Select
             value={type}
-            onValueChange={(val: any) => setType(val)}
+            onValueChange={(val: string | null) => {
+              if (val) {
+                setType(val as 'image' | 'video' | 'audio' | 'document');
+              }
+            }}
           >
             <SelectTrigger className="h-8 text-xs font-mono bg-background border-border">
               <SelectValue />

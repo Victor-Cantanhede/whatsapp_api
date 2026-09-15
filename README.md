@@ -69,9 +69,15 @@ Abaixo está o dicionário das variáveis principais:
 | `APP_META_WEBHOOK_VERIFY_TOKEN`| Sim | - | Segredo de validação para configurar o Webhook no painel da Meta. |
 | `CLIENT_WEBHOOK_URL` | Sim | - | URL da sua aplicação (client) que receberá o webhook das mensagens. |
 | `CLIENT_WEBHOOK_SECRET` | Sim | - | Segredo usado para assinar o webhook e garantir segurança ao cliente. |
-| `FFMPEG_API_URL` | Sim | *Ver .env.dev* | URL do microserviço Docker FFMPEG para conversão de áudios. |
+| `CLIENT_WEBHOOK_TIMEOUT_MS` | Não | `15000` | Timeout em ms para o envio ao webhook oficial do cliente. |
+| `DEV_WEBHOOK_TIMEOUT_MS` | Não | `5000` | Timeout em ms para replicação nos webhooks dev (WebhookClientsDev). |
+| `FFMPEG_API_URL` | Sim | *Ver .env.dev* | URL do microserviço Docker FFMPEG para conversão de áudios (Opus) e imagens (WebP para JPG). |
+| `RETURN_MEDIA_BASE64` | Não | `true` | Se `true`, retorna o base64 dos arquivos em uploads e webhooks recebidos. |
+| `ALLOWED_NUMBERS` | Não | - | Lista de telefones autorizados separados por vírgula para testes restritos em ambiente de desenvolvimento. |
+| `WHATSAPP_CLOUD_API_URL` | Não | *Calculado via CLOUD_API_VERSION* | URL customizada para a Meta Cloud API (se omitida, usa `https://graph.facebook.com/${CLOUD_API_VERSION}`). |
 
 ---
+
 
 ## 🚀 Rodando o Projeto Localmente
 

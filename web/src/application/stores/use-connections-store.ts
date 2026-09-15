@@ -29,11 +29,17 @@ export const useConnectionsStore = create<ConnectionsState>()((set) => ({
       });
 
       if (result.isOk && result.data) {
-        const list = Array.isArray(result.data)
-          ? result.data
-          : result.data.data && Array.isArray(result.data.data)
-          ? result.data.data
-          : [];
+        let list: Connection[] = [];
+        if (Array.isArray(result.data)) {
+          list = result.data as Connection[];
+        } else if (
+          typeof result.data === 'object' &&
+          result.data !== null &&
+          'data' in result.data &&
+          Array.isArray((result.data as { data: unknown }).data)
+        ) {
+          list = (result.data as { data: Connection[] }).data;
+        }
 
         set({ connections: list, isLoading: false });
 
@@ -45,17 +51,24 @@ export const useConnectionsStore = create<ConnectionsState>()((set) => ({
           }
         }
       } else {
+        const errObj =
+          result.data && typeof result.data === 'object'
+            ? (result.data as Record<string, unknown>)
+            : null;
         set({
           connections: [],
           isLoading: false,
-          error: result.data?.message || 'Falha ao carregar conexões.',
+          error:
+            typeof errObj?.message === 'string'
+              ? errObj.message
+              : 'Falha ao carregar conexões.',
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       set({
         connections: [],
         isLoading: false,
-        error: err?.message || 'Erro inesperado.',
+        error: err instanceof Error ? err.message : 'Erro inesperado.',
       });
     }
   },

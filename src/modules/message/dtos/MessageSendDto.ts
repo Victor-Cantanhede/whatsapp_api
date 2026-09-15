@@ -1,25 +1,39 @@
-﻿import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class MessageSendTextDto {
 	@ApiProperty()
+	@IsString()
+	@IsNotEmpty()
 	body: string;
 }
 
 export class MessageSendDto {
 	@ApiProperty({ description: 'ID da conexão no banco de dados' })
+	@Type(() => Number)
+	@IsNumber()
 	connectionId: number;
 
 	@ApiProperty()
+	@IsString()
+	@IsNotEmpty()
 	to: string;
 
 	@ApiProperty({ default: 'text' })
+	@IsOptional()
+	@IsString()
 	type: string;
 
 	@ApiProperty({ required: false, type: MessageSendTextDto })
+	@IsOptional()
+	@ValidateNested()
+	@Type(() => MessageSendTextDto)
 	text?: MessageSendTextDto;
 
 	@ApiProperty({ required: false, description: 'ID da mensagem mencionada' })
+	@IsOptional()
+	@IsString()
 	quotedMessageId?: string;
 }
 
@@ -30,11 +44,14 @@ export class MessageSendMediaDto extends MessageSendDto {
 
 	// Caso a mídia venha com uma mensagem de texto
 	@ApiProperty({ required: false })
+	@IsOptional()
+	@IsString()
 	caption?: string;
 }
 
 export class MessageSendTemplateDto {
 	@ApiProperty({ description: 'ID da conexão no banco de dados', example: 1 })
+	@Type(() => Number)
 	@IsNumber()
 	connectionId: number;
 

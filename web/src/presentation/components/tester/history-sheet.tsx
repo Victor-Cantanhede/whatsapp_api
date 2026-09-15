@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { History, Trash2, ArrowUpRight, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { History, Trash2, ArrowUpRight, Clock } from 'lucide-react';
 import {
   Sheet,
   SheetContent,

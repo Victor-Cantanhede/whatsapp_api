@@ -76,8 +76,8 @@ describe('executeApiRequest (HTTP Client)', () => {
       queryParams: {
         id: 1,
         filter: '',
-        ignored: null as any,
-        undefinedVal: undefined as any,
+        ignored: null as unknown as string,
+        undefinedVal: undefined as unknown as string,
         active: 'true',
       },
     });
