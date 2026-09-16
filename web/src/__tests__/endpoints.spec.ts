@@ -89,4 +89,18 @@ describe('API_ENDPOINTS Catalog Validation', () => {
     const queryParamNames = deleteTemplateEp?.queryParams?.map((q) => q.name);
     expect(queryParamNames).toContain('templateId');
   });
+
+  it('o endpoint msg-template-media deve estar configurado como FormData com campos de template e arquivo', () => {
+    const tplMediaEp = API_ENDPOINTS.find((e) => e.id === 'msg-template-media');
+    expect(tplMediaEp).toBeDefined();
+    expect(tplMediaEp?.isFormData).toBe(true);
+    expect(tplMediaEp?.method).toBe('POST');
+    expect(tplMediaEp?.path).toBe('/messages/template/media');
+
+    const fieldNames = tplMediaEp?.formDataFields?.map((f) => f.name);
+    expect(fieldNames).toContain('file');
+    expect(fieldNames).toContain('connectionId');
+    expect(fieldNames).toContain('to');
+    expect(fieldNames).toContain('templateName');
+  });
 });

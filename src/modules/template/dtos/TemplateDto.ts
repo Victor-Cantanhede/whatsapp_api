@@ -1,24 +1,38 @@
-﻿import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class TemplateComponentDto {
-	@ApiProperty({ description: 'Tipo do componente, ex: BODY', default: 'BODY' })
-	@IsIn(['BODY'], { message: 'O tipo do componente deve ser obrigatoriamente BODY' })
+	@ApiProperty({ description: 'Tipo do componente: BODY, HEADER ou FOOTER', default: 'BODY', enum: ['BODY', 'HEADER', 'FOOTER'] })
+	@IsIn(['BODY', 'HEADER', 'FOOTER'], { message: 'O tipo do componente deve ser BODY, HEADER ou FOOTER' })
 	type: string;
-
-	@ApiProperty({ description: 'Texto do componente contendo placeholders como {{1}}, {{2}}', example: 'Olá {{1}}, seu código é {{2}}.' })
-	@IsString()
-	@IsNotEmpty()
-	text: string;
 
 	@ApiProperty({
 		required: false,
-		description: 'Exemplos das variáveis para aprovação da Meta. Pode ser um array de strings ou objeto com body_text.',
+		description: 'Formato do cabeçalho quando type for HEADER (ex: DOCUMENT, TEXT, IMAGE, VIDEO)',
+		enum: ['DOCUMENT', 'TEXT', 'IMAGE', 'VIDEO'],
+		example: 'DOCUMENT',
+	})
+	@IsOptional()
+	@IsIn(['DOCUMENT', 'TEXT', 'IMAGE', 'VIDEO'], { message: 'O formato do cabeçalho deve ser DOCUMENT, TEXT, IMAGE ou VIDEO' })
+	format?: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Texto do componente contendo placeholders como {{1}}, {{2}} (obrigatório para BODY ou HEADER TEXT)',
+		example: 'Olá {{1}}, seu código é {{2}}.',
+	})
+	@IsOptional()
+	@IsString()
+	text?: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Exemplos de variáveis ou handle de mídia para aprovação da Meta. Ex: ["João", "123"] para BODY, ou ["4::..."] para DOCUMENT header_handle.',
 		example: ['João', '123456'],
 	})
 	@IsOptional()
-	example?: string[] | { body_text: string[][] };
+	example?: string[] | { body_text?: string[][]; header_handle?: string[]; header_text?: string[] };
 }
 
 export class CreateTemplateDto {

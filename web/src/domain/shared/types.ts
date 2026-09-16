@@ -11,7 +11,7 @@ export interface ParamDefinition {
 
 export interface FormDataFieldDefinition {
   name: string;
-  type: 'text' | 'number' | 'select';
+  type: 'text' | 'number' | 'select' | 'file';
   required: boolean;
   description: string;
   placeholder?: string;

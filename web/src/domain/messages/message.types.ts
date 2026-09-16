@@ -10,6 +10,13 @@ export const sendTextMessageSchema = z.object({
   quotedMessageId: z.string().optional(),
 });
 
+export const templateDocumentSchema = z.object({
+  url: z.string().optional(),
+  base64: z.string().optional(),
+  id: z.string().optional(),
+  filename: z.string().optional(),
+});
+
 export const sendTemplateMessageSchema = z
   .object({
     connectionId: z.coerce.number({ message: 'ID da conexão é obrigatório' }).min(1, 'ID da conexão inválido'),
@@ -18,11 +25,21 @@ export const sendTemplateMessageSchema = z
     templateId: z.string().optional(),
     language: z.string().default('pt_BR').optional(),
     variables: z.array(z.union([z.string(), z.number()])).optional(),
+    document: templateDocumentSchema.optional(),
   })
   .refine((data) => Boolean(data.templateName || data.templateId), {
     message: 'Informe o templateName ou templateId do template aprovado',
     path: ['templateName'],
   });
+
+export const sendTemplateMediaMessageSchema = z.object({
+  connectionId: z.coerce.number({ message: 'ID da conexão é obrigatório' }).min(1, 'ID da conexão inválido'),
+  to: z.string().min(8, 'Número do destinatário com DDI é obrigatório'),
+  templateName: z.string().min(1, 'Nome do template é obrigatório'),
+  language: z.string().default('pt_BR').optional(),
+  filename: z.string().optional(),
+  variables: z.union([z.array(z.union([z.string(), z.number()])), z.string()]).optional(),
+});
 
 
 export const sendMediaMessageSchema = z.object({

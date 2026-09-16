@@ -34,21 +34,42 @@ export class TemplateService {
 		}
 
 		const formattedComponents = dto.components.map((comp) => {
-			const formatted: Record<string, any> = {
-				type: comp.type,
-				text: comp.text,
-			};
+			const type = comp.type.toUpperCase();
+			const formatted: Record<string, any> = { type };
 
-			if (comp.example) {
-				if (Array.isArray(comp.example)) {
-					// Converte array simples ['João', '123456'] para o formato da Meta { body_text: [['João', '123456']] }
-					formatted.example = {
-						body_text: [comp.example.map((item) => String(item))],
-					};
-				} else if (typeof comp.example === 'object') {
-					formatted.example = comp.example;
-				}
+			if (comp.format) {
+				formatted.format = comp.format.toUpperCase();
 			}
+
+			if (comp.text) {
+				formatted.text = comp.text;
+			}
+
+			if (!comp.example) {
+				return formatted;
+			}
+
+			if (typeof comp.example === 'object' && !Array.isArray(comp.example)) {
+				formatted.example = comp.example;
+				return formatted;
+			}
+
+			const exampleArray = Array.isArray(comp.example) ? comp.example.map(String) : [String(comp.example)];
+
+			if (type === 'HEADER' && formatted.format === 'DOCUMENT') {
+				formatted.example = { header_handle: [exampleArray[0]] };
+				return formatted;
+			}
+
+			if (type === 'HEADER' && (formatted.format === 'TEXT' || !formatted.format)) {
+				formatted.example = { header_text: exampleArray };
+				return formatted;
+			}
+
+			// Padrão para componente BODY
+			formatted.example = {
+				body_text: [exampleArray],
+			};
 
 			return formatted;
 		});

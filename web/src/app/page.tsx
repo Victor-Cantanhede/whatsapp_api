@@ -9,6 +9,7 @@ import { EndpointHeader } from '@/presentation/components/tester/endpoint-header
 import { DynamicForm } from '@/presentation/components/tester/dynamic-form';
 import { JsonEditor } from '@/presentation/components/tester/json-editor';
 import { FormDataMedia } from '@/presentation/components/tester/form-data-media';
+import { FormDataTemplateMedia } from '@/presentation/components/tester/form-data-template-media';
 import { FbSignupCard } from '@/presentation/components/tester/fb-signup-card';
 import { ResponsePanel } from '@/presentation/components/tester/response-panel';
 import { CodeSnippets } from '@/presentation/components/tester/code-snippets';
@@ -145,15 +146,40 @@ export default function ApiTesterPage() {
       try {
         const parsed = JSON.parse(body);
         return {
-          templateName: parsed?.templateId,
+          templateName: parsed?.templateName || parsed?.templateId,
           recipient: parsed?.to,
+          variables: Array.isArray(parsed?.variables) ? parsed.variables : undefined,
+          documentName:
+            parsed?.document?.filename ||
+            (parsed?.document?.url || parsed?.document?.base64 ? 'documento.pdf' : undefined),
         };
       } catch {
         return {};
       }
     }
+    if (selectedEndpoint.id === 'msg-template-media') {
+      const to = formData?.get('to') as string;
+      const templateName = formData?.get('templateName') as string;
+      const filename = formData?.get('filename') as string;
+      const file = formData?.get('file') as File;
+      const rawVars = formData?.get('variables') as string;
+      let variables: any[] | undefined;
+      if (rawVars) {
+        try {
+          variables = JSON.parse(rawVars);
+        } catch {
+          variables = [rawVars];
+        }
+      }
+      return {
+        templateName,
+        recipient: to,
+        variables,
+        documentName: filename || file?.name || 'documento.pdf',
+      };
+    }
     return null;
-  }, [selectedEndpoint.id, body]);
+  }, [selectedEndpoint.id, body, formData]);
 
   // Disparo da Requisição HTTP
   const handleSendRequest = async () => {
@@ -275,14 +301,23 @@ export default function ApiTesterPage() {
                   />
                 )}
 
-                {/* FormData Upload for Media */}
+                {/* FormData Upload for Media or Template Media */}
                 {selectedEndpoint.isFormData ? (
-                  <FormDataMedia
-                    onFormDataChange={(fd, valid) => {
-                      setFormData(fd);
-                      setIsFormDataValid(valid);
-                    }}
-                  />
+                  selectedEndpoint.id === 'msg-template-media' ? (
+                    <FormDataTemplateMedia
+                      onFormDataChange={(fd, valid) => {
+                        setFormData(fd);
+                        setIsFormDataValid(valid);
+                      }}
+                    />
+                  ) : (
+                    <FormDataMedia
+                      onFormDataChange={(fd, valid) => {
+                        setFormData(fd);
+                        setIsFormDataValid(valid);
+                      }}
+                    />
+                  )
                 ) : (
                   /* JSON Body Editor */
                   ['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && (
@@ -300,6 +335,8 @@ export default function ApiTesterPage() {
                     text={chatPreviewData.text}
                     recipient={chatPreviewData.recipient}
                     templateName={chatPreviewData.templateName}
+                    variables={chatPreviewData.variables}
+                    documentName={chatPreviewData.documentName}
                   />
                 )}
 

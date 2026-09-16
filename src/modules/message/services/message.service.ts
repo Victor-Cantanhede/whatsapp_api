@@ -1,7 +1,7 @@
-﻿import { Response } from 'express';
+import { Response } from 'express';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DbService } from 'src/infrastructure/database/prisma/prisma.service';
-import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType, MessageSendTemplateDto } from '../dtos/MessageSendDto';
+import { MessageSendDto, MessageSendMediaDto, MessageSendMediaResponseDto, MessageType, MessageSendTemplateDto, MessageSendTemplateMediaDto, TemplateDocumentDto } from '../dtos/MessageSendDto';
 import { WhatsAppApiClient } from 'src/infrastructure/whatsapp-api/whatsapp-api.client';
 import { BadRequestException, BadGatewayException } from '@nestjs/common';
 import { convertBufferToBase64 } from 'src/utils/media.utils';
@@ -12,6 +12,73 @@ export class MessageService {
 		private readonly db: DbService,
 		private readonly apiClient: WhatsAppApiClient,
 	) {}
+
+	private parseVariables(variables?: any): (string | number)[] {
+		if (!variables) return [];
+		if (Array.isArray(variables)) return variables;
+		if (typeof variables === 'string') {
+			try {
+				const parsed = JSON.parse(variables);
+				if (Array.isArray(parsed)) return parsed;
+			} catch {
+				return [variables];
+			}
+		}
+		return [String(variables)];
+	}
+
+	private async uploadBufferToMeta(phoneId: string, userToken: string, fileBuffer: Buffer, fileName: string, mimeType = 'application/pdf'): Promise<string> {
+		const formData = new FormData();
+		const blob = new Blob([fileBuffer as any], { type: mimeType });
+		formData.append('file', blob, fileName);
+		formData.append('messaging_product', 'whatsapp');
+
+		const uploadedMedia = await this.apiClient.post<{ id: string }>(phoneId, userToken, '/media', formData).catch((err) => {
+			console.error('Error uploading template media to Meta:', err);
+			throw new BadGatewayException('Ocorreu um erro ao enviar o arquivo de template para o WhatsApp!');
+		});
+
+		return uploadedMedia.id;
+	}
+
+	private async resolveDocumentHeaderComponent(phoneId: string, userToken: string, doc?: TemplateDocumentDto): Promise<Record<string, any> | null> {
+		if (!doc) return null;
+
+		let documentParam: Record<string, any> | null = null;
+
+		if (doc.url) {
+			documentParam = {
+				link: doc.url,
+				...(doc.filename ? { filename: doc.filename } : {}),
+			};
+		} else if (doc.id) {
+			documentParam = {
+				id: doc.id,
+				...(doc.filename ? { filename: doc.filename } : {}),
+			};
+		} else if (doc.base64) {
+			const cleanBase64 = doc.base64.replace(/^data:.*?;base64,/, '');
+			const buffer = Buffer.from(cleanBase64, 'base64');
+			const fileName = doc.filename || 'documento.pdf';
+			const mediaId = await this.uploadBufferToMeta(phoneId, userToken, buffer, fileName);
+			documentParam = {
+				id: mediaId,
+				filename: fileName,
+			};
+		}
+
+		if (!documentParam) return null;
+
+		return {
+			type: 'header',
+			parameters: [
+				{
+					type: 'document',
+					document: documentParam,
+				},
+			],
+		};
+	}
 
 	async sendTextMessage(dto: MessageSendDto) {
 		const connectionId = Number(dto.connectionId);
@@ -72,19 +139,25 @@ export class MessageService {
 			resolvedTemplateName = templateData.name;
 		}
 
+		// Resolve documento para o cabeçalho se fornecido (url, base64 ou id)
+		const headerComponent = await this.resolveDocumentHeaderComponent(connection.phone_id, connection.user_token, dto.document);
+
 		// Monta os componentes com variáveis para o corpo se fornecidos
 		const hasVariables = Array.isArray(dto.variables) && dto.variables.length > 0;
-		const components = hasVariables
-			? [
-					{
-						type: 'body',
-						parameters: dto.variables!.map((val) => ({
-							type: 'text',
-							text: String(val),
-						})),
-					},
-				]
-			: undefined;
+		const bodyComponent = hasVariables
+			? {
+					type: 'body',
+					parameters: dto.variables!.map((val) => ({
+						type: 'text',
+						text: String(val),
+					})),
+				}
+			: null;
+
+		const components = [
+			...(headerComponent ? [headerComponent] : []),
+			...(bodyComponent ? [bodyComponent] : []),
+		];
 
 		const payload = {
 			messaging_product: 'whatsapp',
@@ -96,7 +169,70 @@ export class MessageService {
 				language: {
 					code: dto.language || 'pt_BR',
 				},
-				...(components ? { components } : {}),
+				...(components.length > 0 ? { components } : {}),
+			},
+		};
+
+		return this.apiClient.post(connection.phone_id, connection.user_token, '/messages', payload);
+	}
+
+	async sendTemplateMediaMessage(file: Express.Multer.File, dto: MessageSendTemplateMediaDto) {
+		if (!file) {
+			throw new BadRequestException('O arquivo físico do documento é obrigatório');
+		}
+
+		const connectionId = Number(dto.connectionId);
+		const connection = await this.db.connections.findUnique({
+			where: { id: connectionId },
+		});
+
+		if (!connection) {
+			throw new NotFoundException(`Connection with ID ${connectionId} not found`);
+		}
+
+		const fileName = dto.filename || file.originalname || 'documento.pdf';
+		const mediaId = await this.uploadBufferToMeta(connection.phone_id, connection.user_token, file.buffer, fileName, file.mimetype);
+
+		const headerComponent = {
+			type: 'header',
+			parameters: [
+				{
+					type: 'document',
+					document: {
+						id: mediaId,
+						filename: fileName,
+					},
+				},
+			],
+		};
+
+		const parsedVars = this.parseVariables(dto.variables);
+		const bodyComponent = parsedVars.length > 0
+			? {
+					type: 'body',
+					parameters: parsedVars.map((val) => ({
+						type: 'text',
+						text: String(val),
+					})),
+				}
+			: null;
+
+		const components = [
+			headerComponent,
+			...(bodyComponent ? [bodyComponent] : []),
+		];
+
+		const payload = {
+			messaging_product: 'whatsapp',
+			recipient_type: 'individual',
+			to: dto.to,
+			type: 'template',
+			template: {
+				name: dto.templateName,
+				language: {
+					code: dto.language || 'pt_BR',
+				},
+				components,
 			},
 		};
 

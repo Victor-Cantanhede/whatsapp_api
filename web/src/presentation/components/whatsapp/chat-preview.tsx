@@ -1,24 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import { CheckCheck, MessageSquare } from 'lucide-react';
+import { CheckCheck, FileText, MessageSquare } from 'lucide-react';
 
 interface ChatPreviewProps {
   text?: string;
   recipient?: string;
   templateName?: string;
+  variables?: (string | number)[];
+  documentName?: string;
 }
 
-export function ChatPreview({ text, recipient, templateName }: ChatPreviewProps) {
+export function ChatPreview({ text, recipient, templateName, variables, documentName }: ChatPreviewProps) {
   const time = new Date().toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
   });
 
+  const formattedVariables =
+    variables && variables.length > 0 ? `\nParâmetros: ${variables.join(' • ')}` : '';
+
   const displayText =
     text ||
     (templateName
-      ? `[Template: ${templateName}]`
+      ? `[Template: ${templateName}]${formattedVariables}`
       : 'Digite uma mensagem para visualizar o balão de chat.');
 
   return (
@@ -37,10 +42,24 @@ export function ChatPreview({ text, recipient, templateName }: ChatPreviewProps)
 
       {/* WhatsApp Message Bubble */}
       <div className="flex justify-end pt-2">
-        <div className="max-w-[85%] sm:max-w-[75%] rounded-lg rounded-tr-none bg-[#005c4b] text-[#e9edef] p-3 shadow-md space-y-1 relative">
+        <div className="max-w-[85%] sm:max-w-[75%] rounded-lg rounded-tr-none bg-[#005c4b] text-[#e9edef] p-3 shadow-md space-y-2 relative">
+          {/* Document Header Card if present */}
+          {documentName && (
+            <div className="flex items-center gap-3 bg-[#025144] rounded-md p-2.5 border border-emerald-700/40">
+              <div className="w-9 h-9 rounded bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-white truncate">{documentName}</p>
+                <p className="text-[10px] text-emerald-200/60 uppercase">Documento • PDF</p>
+              </div>
+            </div>
+          )}
+
           <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">
             {displayText}
           </p>
+
           <div className="flex items-center justify-end gap-1 text-[10px] text-emerald-200/70 pt-0.5">
             <span>{time}</span>
             <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />

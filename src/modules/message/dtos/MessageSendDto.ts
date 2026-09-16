@@ -49,6 +49,28 @@ export class MessageSendMediaDto extends MessageSendDto {
 	caption?: string;
 }
 
+export class TemplateDocumentDto {
+	@ApiProperty({ required: false, description: 'URL pública do documento (PDF, etc.)', example: 'https://exemplo.com/fatura.pdf' })
+	@IsOptional()
+	@IsString()
+	url?: string;
+
+	@ApiProperty({ required: false, description: 'Conteúdo do documento em Base64 (dispensa storage público/S3)', example: 'JVBERi0xLjQK...' })
+	@IsOptional()
+	@IsString()
+	base64?: string;
+
+	@ApiProperty({ required: false, description: 'ID da mídia já previamente enviada à Meta', example: '1234567890' })
+	@IsOptional()
+	@IsString()
+	id?: string;
+
+	@ApiProperty({ required: false, description: 'Nome do arquivo que será exibido para o contato no WhatsApp', example: 'Fatura_Outubro.pdf' })
+	@IsOptional()
+	@IsString()
+	filename?: string;
+}
+
 export class MessageSendTemplateDto {
 	@ApiProperty({ description: 'ID da conexão no banco de dados', example: 1 })
 	@Type(() => Number)
@@ -97,6 +119,60 @@ export class MessageSendTemplateDto {
 	@IsOptional()
 	@IsArray()
 	variables?: (string | number)[];
+
+	@ApiProperty({
+		required: false,
+		type: TemplateDocumentDto,
+		description: 'Documento dinâmico para o cabeçalho do template (suporta url, base64 ou id)',
+	})
+	@IsOptional()
+	@ValidateNested()
+	@Type(() => TemplateDocumentDto)
+	document?: TemplateDocumentDto;
+}
+
+export class MessageSendTemplateMediaDto {
+	@ApiProperty({ description: 'ID da conexão no banco de dados', example: 1 })
+	@Type(() => Number)
+	@IsNumber()
+	connectionId: number;
+
+	@ApiProperty({ description: 'Número do destinatário com DDI (Ex: 5511999999999)', example: '5511999999999' })
+	@IsString()
+	@IsNotEmpty()
+	to: string;
+
+	@ApiProperty({ description: 'Nome exato do template aprovado na Meta', example: 'fatura_mensal' })
+	@IsString()
+	@IsNotEmpty()
+	templateName: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Código do idioma do template',
+		default: 'pt_BR',
+		example: 'pt_BR',
+	})
+	@IsOptional()
+	@IsString()
+	language?: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Nome personalizado do arquivo a ser exibido no WhatsApp (ex: Fatura_Outubro.pdf)',
+		example: 'Fatura_Outubro.pdf',
+	})
+	@IsOptional()
+	@IsString()
+	filename?: string;
+
+	@ApiProperty({
+		required: false,
+		description: 'Valores das variáveis do corpo do template em formato array ou JSON string (ex: ["João", "123456"])',
+		example: '["João", "123456"]',
+	})
+	@IsOptional()
+	variables?: any;
 }
 
 export class MessageSendMediaResponseDto {

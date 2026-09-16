@@ -123,4 +123,35 @@ describe('useCodeGenerator Hook', () => {
     expect(curl).toContain('-F "type=image"');
     expect(jsFetch).toContain('body: formData');
   });
+
+  it('deve gerar snippets para envio de template com documento físico via FormData', () => {
+    const sampleTemplateMediaEndpoint: EndpointDefinition = {
+      id: 'msg-template-media',
+      name: 'Enviar Template com Documento',
+      category: '2. Envio de Mensagens',
+      method: 'POST',
+      path: '/messages/template/media',
+      description: 'Upload de documento para template',
+      requiresAuth: true,
+      isFormData: true,
+    };
+
+    const { result } = renderHook(() =>
+      useCodeGenerator({
+        endpoint: sampleTemplateMediaEndpoint,
+        baseUrl: 'http://localhost:5003',
+        apiKey: 'template_token',
+        isFormData: true,
+      })
+    );
+
+    const { curl, jsFetch, pythonCode } = result.current;
+
+    expect(curl).toContain('-F "file=@/caminho/do/documento.pdf"');
+    expect(curl).toContain('-F "templateName=fatura_mensal"');
+    expect(curl).toContain('-F "filename=Fatura_Outubro.pdf"');
+    expect(curl).toContain('-F \'variables=["João", "R$ 150,00"]\'');
+    expect(jsFetch).toContain('formData.append("templateName", "fatura_mensal")');
+    expect(pythonCode).toContain('"templateName": "fatura_mensal"');
+  });
 });

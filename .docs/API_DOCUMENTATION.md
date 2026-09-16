@@ -235,21 +235,26 @@ fetch("https://sua-api.com/messages/text", {
 ```
 
 ### `POST /messages/template`
-- **Descrição Didática:** Envia uma mensagem pré-aprovada (Template) pela Meta (geralmente usada para iniciar conversas fora da janela de 24h). Suporta interpolação de variáveis no corpo do template e seleção de idioma.
+- **Descrição Didática:** Envia uma mensagem pré-aprovada (Template) pela Meta (geralmente usada para iniciar conversas fora da janela de 24h). Suporta interpolação de variáveis no corpo e envio de **documentos dinâmicos no cabeçalho** (sem necessidade de S3 via Base64 ou URL pública).
 - **Parâmetros / Body (JSON):**
 
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `connectionId` | number | Sim | ID interno da conexão. |
 | `to` | string | Sim | Número do destinatário no formato internacional (Ex: 5511999999999). |
-| `templateName` | string | Condicional* | Nome exato do template aprovado na Meta (ex: "codigo_verificacao"). |
+| `templateName` | string | Condicional* | Nome exato do template aprovado na Meta (ex: "fatura_mensal"). |
 | `templateId` | string | Condicional* | Nome do template ou ID numérico da Meta (compatibilidade retroativa). |
 | `language` | string | Não | Código do idioma do template (Default: `"pt_BR"`). |
-| `variables` | array | Não | Valores para substituir as variáveis posicionais do corpo do template (`{{1}}`, `{{2}}`), ex: `["João", "123456"]`. |
+| `variables` | array | Não | Valores para substituir as variáveis posicionais do corpo do template (`{{1}}`, `{{2}}`), ex: `["João", "R$ 150,00"]`. |
+| `document` | object | Não | Objeto com os dados do documento para o cabeçalho. |
+| `document.url` | string | Opcional | URL pública para a Meta baixar o arquivo diretamente. |
+| `document.base64` | string | Opcional | Conteúdo do arquivo em Base64. A API faz o upload transparente na Meta (dispensa storage/S3). |
+| `document.id` | string | Opcional | ID de mídia previamente carregada na Meta. |
+| `document.filename` | string | Opcional | Nome personalizado do arquivo exibido no WhatsApp (ex: "Fatura_Outubro.pdf"). |
 
 *\*Obs: É obrigatório informar `templateName` ou `templateId`.*
 
-- **Exemplo de Requisição com Variáveis (cURL):**
+- **Exemplo de Requisição com Documento e Variáveis (cURL):**
 ```bash
 curl -X POST https://sua-api.com/messages/template \
   -H "Content-Type: application/json" \
@@ -257,10 +262,45 @@ curl -X POST https://sua-api.com/messages/template \
   -d '{
     "connectionId": 1,
     "to": "5511999999999",
-    "templateName": "codigo_verificacao",
+    "templateName": "fatura_mensal",
     "language": "pt_BR",
-    "variables": ["João", "481920"]
+    "document": {
+      "base64": "JVBERi0xLjQKJ...",
+      "filename": "Fatura_Outubro.pdf"
+    },
+    "variables": ["João", "R$ 150,00"]
   }'
+```
+
+### `POST /messages/template/media`
+- **Descrição Didática:** Envia mensagem de template anexando um arquivo físico de documento (ex: `.pdf`) via Multipart/Form-Data, ideal para quando a aplicação possui o arquivo físico em disco ou stream e não deseja codificar em Base64 ou expor via URL.
+- **Parâmetros / Body (Form-Data):**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `file` | binary | Sim | Arquivo físico do documento anexado. |
+| `connectionId` | number | Sim | ID interno da conexão. |
+| `to` | string | Sim | Número do destinatário com DDI (Ex: 5511999999999). |
+| `templateName` | string | Sim | Nome exato do template aprovado na Meta. |
+| `language` | string | Não | Idioma do template (Default: `"pt_BR"`). |
+| `filename` | string | Não | Nome personalizado exibido no WhatsApp (padrão: nome original do arquivo). |
+| `variables` | string | Não | Array JSON de variáveis do corpo, ex: `["João", "R$ 150,00"]`. |
+
+- **Exemplo de Requisição (JavaScript / FormData):**
+```javascript
+const formData = new FormData();
+formData.append("file", fileInput.files[0]);
+formData.append("connectionId", 1);
+formData.append("to", "5511999999999");
+formData.append("templateName", "fatura_mensal");
+formData.append("filename", "Fatura_Outubro.pdf");
+formData.append("variables", JSON.stringify(["João", "R$ 150,00"]));
+
+fetch("https://sua-api.com/messages/template/media", {
+  method: "POST",
+  headers: { "Authorization": "Bearer TOKEN" },
+  body: formData
+});
 ```
 
 ### `POST /messages/media`
@@ -308,34 +348,41 @@ Quando um webhook notifica que você recebeu um áudio ou imagem, o ID dessa mí
 Gerencia a criação, consulta e exclusão de templates na WABA da Meta.
 
 ### `POST /templates`
-- **Descrição Didática:** Cria um novo template de mensagem e submete para aprovação da Meta. Se o corpo contiver variáveis posicionais (`{{1}}`, `{{2}}`), o campo `example` dentro do componente é **obrigatório pela Meta**.
+- **Descrição Didática:** Cria um novo template de mensagem e submete para aprovação da Meta. Suporta componentes `BODY`, `HEADER` (com texto ou mídia como `DOCUMENT`, `IMAGE`, `VIDEO`) e `FOOTER`. Se o corpo contiver variáveis posicionais (`{{1}}`, `{{2}}`) ou o cabeçalho for um documento, o campo `example` dentro do componente é **obrigatório pela Meta**.
 - **Parâmetros / Body (JSON):**
 
 | Campo | Tipo | Obrigatório | Descrição |
-|-------|------|-------------|-----------|
+|---|---|---|---|
 | `connectionId`| number | Sim | ID da conexão vinculada ao WABA que aprovará. |
 | `name` | string | Sim | Nome identificador do template (letras minúsculas, números e sublinhados). |
 | `category` | string | Sim | Apenas `MARKETING` ou `UTILITY`. |
 | `language` | string | Não | Idioma do template (Default: `"pt_BR"`). |
-| `components` | array | Sim | Lista de componentes do template (`type: 'BODY'`). |
-| `components[].text` | string | Sim | Texto do template (pode conter marcadores `{{1}}`, `{{2}}`). |
-| `components[].example` | array/obj | Condicional* | Exemplos de valores reais para as variáveis (ex: `["Maria", "30"]`). Obrigatório pela Meta quando o texto tem variáveis. |
+| `components` | array | Sim | Lista de componentes do template (`HEADER`, `BODY`, `FOOTER`). |
+| `components[].type` | string | Sim | `HEADER`, `BODY` ou `FOOTER`. |
+| `components[].format` | string | Não | Para `HEADER`: `DOCUMENT`, `TEXT`, `IMAGE` ou `VIDEO`. |
+| `components[].text` | string | Condicional | Texto do componente (obrigatório para `BODY` ou `HEADER` textual). Pode conter marcadores `{{1}}`, `{{2}}`. |
+| `components[].example` | array/obj | Condicional* | Exemplos de valores reais para as variáveis (ex: `["Maria", "30"]` para body ou `["4::handle..."]` para cabeçalho de documento). |
 
-- **Exemplo de Requisição (fetch):**
+- **Exemplo de Criação de Template com Documento (fetch):**
 ```javascript
 fetch("https://sua-api.com/templates", {
   method: "POST",
   headers: { "Content-Type": "application/json", "Authorization": "Bearer TOKEN" },
   body: JSON.stringify({
     connectionId: 1,
-    name: "aviso_promocao_01",
-    category: "MARKETING",
+    name: "fatura_mensal",
+    category: "UTILITY",
     language: "pt_BR",
     components: [
       {
+        type: "HEADER",
+        format: "DOCUMENT",
+        example: ["4::YXBwbGljYXRpb24vcGRm:ARZ..."]
+      },
+      {
         type: "BODY",
-        text: "Olá {{1}}! Temos uma promoção incrível de {{2}}% para você hoje!",
-        example: ["Maria", "20"]
+        text: "Olá {{1}}, sua fatura do mês de {{2}} já está disponível em anexo.",
+        example: ["Maria", "Outubro"]
       }
     ]
   })

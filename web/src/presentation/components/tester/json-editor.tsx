@@ -1,9 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { AlertCircle, Check, Copy, Sparkles } from 'lucide-react';
+import { AlertCircle, Check, Copy, FileUp, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 
 interface JsonEditorProps {
   value: string;
@@ -14,6 +15,7 @@ interface JsonEditorProps {
 export function JsonEditor({ value, onChange, onErrorChange }: JsonEditorProps) {
   const [jsonError, setJsonError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const validate = React.useCallback(
     (text: string) => {
@@ -62,6 +64,37 @@ export function JsonEditor({ value, onChange, onErrorChange }: JsonEditorProps) 
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleFileToBase64 = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = reader.result as string;
+      try {
+        let currentObj: Record<string, any> = {};
+        if (value.trim()) {
+          currentObj = JSON.parse(value);
+        }
+        currentObj.document = {
+          ...(currentObj.document || {}),
+          base64: base64Data,
+          filename: selectedFile.name,
+        };
+        const updated = JSON.stringify(currentObj, null, 2);
+        onChange(updated);
+        setJsonError(null);
+        onErrorChange?.(false);
+        toast.success(`Arquivo "${selectedFile.name}" convertido e inserido em document.base64!`);
+      } catch {
+        toast.error('Erro ao injetar Base64 no JSON atual. Verifique a sintaxe.');
+      }
+    };
+    reader.readAsDataURL(selectedFile);
+    // Reset file input
+    e.target.value = '';
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
@@ -69,6 +102,24 @@ export function JsonEditor({ value, onChange, onErrorChange }: JsonEditorProps) 
           Corpo da Requisição (JSON Body)
         </label>
         <div className="flex items-center gap-1.5">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileToBase64}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-6 px-2 text-[11px] font-medium text-muted-foreground hover:text-emerald-400 gap-1 border border-border/60 hover:border-emerald-500/40"
+            title="Converte um arquivo local em Base64 e injeta em document.base64"
+          >
+            <FileUp className="w-3 h-3 text-emerald-400" />
+            PDF para Base64
+          </Button>
           <Button
             type="button"
             variant="ghost"
